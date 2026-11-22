@@ -159,7 +159,8 @@ public partial class SharpTimer
 
         if (!player!.PlayerPawn.Value!.AbsVelocity.IsZero())
         {
-            Utils.PrintToChat(player, Localizer["modes_moving"]);
+            if (HudReply(player, "MODE", "", "Stop moving to change your mode", true))
+                Utils.PrintToChat(player, Localizer["modes_moving"]);
             return;
         }
 
@@ -189,7 +190,8 @@ public partial class SharpTimer
         if (TryParseMode(desiredMode.ToLower(), out Mode newMode))
         {
             SetPlayerMode(player, newMode);
-            Utils.PrintToChat(player, Localizer["mode_set", GetModeName(newMode)]);
+            if (HudReply(player, "MODE", GetModeName(newMode), "\u00b7 records and points count separately"))
+                Utils.PrintToChat(player, Localizer["mode_set", GetModeName(newMode)]);
             AddTimer(0.1f, () =>
             {
                 RespawnPlayer(player);

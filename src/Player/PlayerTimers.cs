@@ -61,6 +61,7 @@ namespace SharpTimer
 
             playerTimers[player!.Slot].IsRecordingReplay = true;
 
+            HudTimerStarted(player);
             if (printStartSpeedEnabled) PrintStartSpeed(player);
         }
 
@@ -87,6 +88,7 @@ namespace SharpTimer
             {
                 if (playerTimer.CurrentMapStage != stageTriggerCount && currentMapOverrideStageRequirement == true)
                 {
+                    HudCancelled(player, $"Missed a stage: {playerTimer.CurrentMapStage}/{stageTriggerCount}");
                     Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone"]}({stageTriggerCount})");
                     Utils.LogDebug($"Player current stage: {playerTimers[slot].CurrentMapStage}; Final checkpoint: {stageTriggerCount}");
                     playerTimer.IsTimerRunning = false;
@@ -96,6 +98,7 @@ namespace SharpTimer
 
                 if (playerTimer.CurrentMapCheckpoint != cpTriggerCount && useCheckpointVerification)
                 {
+                    HudCancelled(player, $"Missed a checkpoint: {playerTimer.CurrentMapCheckpoint}/{cpTriggerCount}");
                     Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone"]}({cpTriggerCount})");
                     Utils.LogDebug($"Player current checkpoint: {playerTimers[slot].CurrentMapCheckpoint}; Final checkpoint: {cpTriggerCount}");
                     playerTimer.IsTimerRunning = false;
@@ -108,6 +111,7 @@ namespace SharpTimer
             {
                 if (playerTimer.CurrentMapStage != stageTriggerCount && currentMapOverrideStageRequirement == false)
                 {
+                    HudCancelled(player, $"Missed a stage: {playerTimer.CurrentMapStage}/{stageTriggerCount}");
                     Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone"]} ({playerTimer.CurrentMapStage}/{stageTriggerCount})");
                     Utils.LogDebug($"Player {player.PlayerName} ({player.SteamID}) tried to finish a map with a current stage of {playerTimer.CurrentMapStage}, but this map has {stageTriggerCount} stages. It is recommended that you review {Server.MapName} for exploits.");
                     playerTimer.IsTimerRunning = false;
@@ -120,6 +124,7 @@ namespace SharpTimer
             {
                 if (playerTimer.CurrentMapCheckpoint != cpTriggerCount && useCheckpointVerification)
                 {
+                    HudCancelled(player, $"Missed a checkpoint: {playerTimer.CurrentMapCheckpoint}/{cpTriggerCount}");
                     Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone"]}({cpTriggerCount})");
                     Utils.LogDebug($"Player current checkpoint: {playerTimers[slot].CurrentMapCheckpoint}; Final checkpoint: {cpTriggerCount}");
                     playerTimer.IsTimerRunning = false;
@@ -129,6 +134,8 @@ namespace SharpTimer
             }
 
             if (useTriggers || useTriggersAndFakeZones) Utils.LogDebug($"Stopping Timer for {playerName}");
+
+            HudFinished(player, currentTicks, bonus: false);
 
             if (enableDb)
             {
@@ -163,6 +170,8 @@ namespace SharpTimer
                 playerTimer.IsRecordingReplay = false;
                 return;
             }
+
+            HudFinished(player, currentTicks, bonus: true);
 
             bool playerValid = IsAllowedPlayer(player);
             _ = Task.Run(async () => await SavePlayerTimeToDatabase(player, currentTicks, steamID, playerName, slot, playerValid, bonusX, playerTimers[player.Slot].currentStyle, playerTimer.Mode));
@@ -207,17 +216,17 @@ namespace SharpTimer
                             
                             if (previousStageTime != 0)
                             {
-                                Utils.PrintToSpec(player, $"Entering Stage: {stageTrigger}");
-                                Utils.PrintToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{formattedStageTicks}{ChatColors.White}] " +
+                                HudSplitToSpec(player, $"Entering Stage: {stageTrigger}");
+                                HudSplitToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{formattedStageTicks}{ChatColors.White}] " +
                                                                 $" [{Utils.FormatTimeDifference(playerStageTicks, previousStageTime)}{ChatColors.White}]" +
                                                                 $" {(previousStageTime != srStageTime && enableStageSR ? $"[SR {Utils.FormatTimeDifference(playerStageTicks, srStageTime)}{ChatColors.White}]" : "")}");
 
                                 if (float.TryParse(currentSpeed, out float speed2) && speed2 >= 100) //workaround for staged maps with not telehops
-                                    Utils.PrintToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentSpeed}u/s{ChatColors.White}]" +
+                                    HudSplitToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentSpeed}u/s{ChatColors.White}]" +
                                                                     $" [{Utils.FormatSpeedDifferenceFromString(currentSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                     $" {(previousStageSpeed != srStageSpeed && enableStageSR ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed)
+                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
                                 {
                                     Utils.PrintToChat(player, $"Entering Stage: {stageTrigger}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{formattedStageTicks}{ChatColors.White}] " +
@@ -230,6 +239,10 @@ namespace SharpTimer
                                                                         $" {(previousStageSpeed != srStageSpeed && enableStageSR ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
                                 }
                             }
+
+                            if (playerTimer.IsTimerRunning)
+                                HudSplit(player, $"Stage {prevStage}", prevStage - 1, playerStageTicks, previousStageTime, srStageTime,
+                                    currentSpeed, previousStageSpeed, srStageSpeed, enableStageSR);
 
                             if (playerTimer.StageVelos != null && playerTimer.StageTimes != null && playerTimer.IsTimerRunning == true && IsAllowedPlayer(player))
                             {
@@ -303,17 +316,17 @@ namespace SharpTimer
                             //TO-DO: Add player setting to enabled/disable printing time comparisons to chat
                             if (previousStageTime != 0)
                             {
-                                Utils.PrintToSpec(player, $"Checkpoint: {playerTimer.CurrentMapCheckpoint}");
-                                Utils.PrintToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
+                                HudSplitToSpec(player, $"Checkpoint: {playerTimer.CurrentMapCheckpoint}");
+                                HudSplitToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
                                                                $" [{Utils.FormatTimeDifference(playerTimerTicks, previousStageTime)}{ChatColors.White}]" +
                                                                $" {(previousStageTime != srStageTime ? $"[SR {Utils.FormatTimeDifference(playerTimerTicks, srStageTime)}{ChatColors.White}]" : "")}");
 
                                 if (float.TryParse(currentStageSpeed, out float speed2) && speed2 >= 100) //workaround for staged maps with not telehops
-                                    Utils.PrintToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentStageSpeed}u/s{ChatColors.White}]" +
+                                    HudSplitToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentStageSpeed}u/s{ChatColors.White}]" +
                                                                    $" [{Utils.FormatSpeedDifferenceFromString(currentStageSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                    $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed)
+                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
                                 {
                                     Utils.PrintToChat(player, $"Checkpoint: {playerTimer.CurrentMapCheckpoint}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
@@ -326,6 +339,10 @@ namespace SharpTimer
                                                                     $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
                                 }
                             }
+
+                            if (playerTimer.IsTimerRunning)
+                                HudSplit(player, $"CP {cpTrigger}", cpTrigger - 1, playerTimerTicks, previousStageTime, srStageTime,
+                                    currentStageSpeed, previousStageSpeed, srStageSpeed, true);
 
                             if (playerTimer.StageVelos != null && playerTimer.StageTimes != null &&
                                 playerTimer.IsTimerRunning == true && IsAllowedPlayer(player) && playerTimer.currentStyle == 0)
@@ -408,17 +425,17 @@ namespace SharpTimer
                             //TO-DO: Add player setting to enabled/disable printing time comparisons to chat
                             if (previousStageTime != 0)
                             {
-                                Utils.PrintToSpec(player, $"Bonus Checkpoint: {bonusCheckpointTrigger}");
-                                Utils.PrintToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
+                                HudSplitToSpec(player, $"Bonus Checkpoint: {bonusCheckpointTrigger}");
+                                HudSplitToSpec(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
                                                                $" [{Utils.FormatTimeDifference(playerTimerTicks, previousStageTime)}{ChatColors.White}]" +
                                                                $" {(previousStageTime != srStageTime ? $"[SR {Utils.FormatTimeDifference(playerTimerTicks, srStageTime)}{ChatColors.White}]" : "")}");
 
                                 if (float.TryParse(currentStageSpeed, out float speed2) && speed2 >= 100) //workaround for staged maps with not telehops
-                                    Utils.PrintToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentStageSpeed}u/s{ChatColors.White}]" +
+                                    HudSplitToSpec(player, $"Speed: {ChatColors.White}[{primaryChatColor}{currentStageSpeed}u/s{ChatColors.White}]" +
                                                                     $" [{Utils.FormatSpeedDifferenceFromString(currentStageSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                     $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed)
+                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
                                 {
                                     Utils.PrintToChat(player, $"Bonus Checkpoint: {bonusCheckpointTrigger}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
@@ -431,6 +448,10 @@ namespace SharpTimer
                                                                        $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
                                 }
                             }
+
+                            if (playerTimer.IsBonusTimerRunning)
+                                HudSplit(player, $"CP {bonusCheckpointTrigger}", -1, playerTimer.BonusTimerTicks, 0, 0,
+                                    currentStageSpeed, "", "", false);
 
                             if (playerTimer.StageVelos != null && playerTimer.StageTimes != null &&
                                 playerTimer.IsTimerRunning == true && IsAllowedPlayer(player) && playerTimer.currentStyle == 0)

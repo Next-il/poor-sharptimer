@@ -1,0 +1,127 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace SharpTimer.Hud;
+
+/// <summary>
+/// The Panorama HUD's server settings: cfg/SharpTimer/hud.json, read on load and on every map start when it
+/// exists. Every key is optional and the code defaults below are the whole default config; the file is never
+/// written. cfg/SharpTimer/example.hud.json lists every key with its default.
+///
+/// <para>The open questions from the design are switches here, each defaulting to what SharpTimer does today
+/// (finishes announced to everyone, the live place, rank icons, the count only past 16 checkpoints, no world
+/// record). The SR chat ad already has its own convar, sharptimer_ad_sr_enabled.</para>
+/// </summary>
+public sealed class HudConfig
+{
+    /// <summary>False: SharpTimer's center HTML, exactly as before. True: the Panorama HUD, with the center HTML
+    /// kept for any player the panel cannot reach.</summary>
+    public bool Enabled { get; set; } = true;
+
+    // ------------------------------------------------------------------ update rates (per second)
+    public int TimerRate { get; set; } = 10;
+    public int SpeedRate { get; set; } = 16;
+    public int SyncRate { get; set; } = 4;
+    public int PlaceRate { get; set; } = 2;
+
+    // ------------------------------------------------------------------ open questions, today's behaviour by default
+
+    /// <summary>Plain finishes (no PB) go to everyone's records feed, like today's chat lines. False: only PBs and records.</summary>
+    public bool FeedFinishes { get; set; } = true;
+
+    /// <summary>The live "#3" on the card while running, against the cached top 100.</summary>
+    public bool LivePlace { get; set; } = true;
+
+    /// <summary>"icon" (today: the rank PNG), "text" (the rank name in its colour) or "both".</summary>
+    public string RankDisplay { get; set; } = "icon";
+
+    /// <summary>More checkpoints or stages than the bar's 16 segments: "count" (no bar, only "12/24"), "group"
+    /// (each segment covers several, coloured by the last split in it) or "scroll" (the 16 around the current one).</summary>
+    public string SplitBarOverflow { get; set; } = "count";
+
+    /// <summary>Show the world record (with a global API key) as a third time on the card.</summary>
+    public bool ShowWorldRecord { get; set; }
+
+    // ------------------------------------------------------------------ chat lines the HUD replaces
+
+    /// <summary>Keep the 3 split lines per stage or checkpoint in chat too.</summary>
+    public bool SplitsInChat { get; set; }
+
+    /// <summary>Keep the 3-5 finish lines ("set a new Map PB!", rank, time, style, mode, points) in chat too.</summary>
+    public bool RecordsInChat { get; set; }
+
+    /// <summary>Keep "Start speed: 352" in chat too.</summary>
+    public bool StartSpeedInChat { get; set; }
+
+    /// <summary>Keep the !style and !mode replies in chat too.</summary>
+    public bool RepliesInChat { get; set; }
+
+    // ------------------------------------------------------------------ timing
+    public float ResultSeconds { get; set; } = 6f;
+    public float ToastSeconds { get; set; } = 3f;
+    public float FeedSeconds { get; set; } = 4.5f;
+    public float FeedRecordSeconds { get; set; } = 6.5f;
+    public float StartChipSeconds { get; set; } = 2f;
+
+    /// <summary>The speed bar's full scale, u/s.</summary>
+    public int SpeedBarMax { get; set; } = 3500;
+
+    /// <summary>What a player who never opened !hud gets.</summary>
+    public HudDefaults Defaults { get; set; } = new();
+
+    [JsonIgnore] public string Source { get; private set; } = "code defaults";
+
+    public static HudConfig Load(string path, Action<string> logError)
+    {
+        try
+        {
+            if (!File.Exists(path)) return new HudConfig();
+
+            var config = JsonSerializer.Deserialize<HudConfig>(File.ReadAllText(path), new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true,
+            }) ?? new HudConfig();
+
+            config.Source = path;
+            config.Clamp();
+            return config;
+        }
+        catch (Exception e)
+        {
+            logError($"[HUD] {path} could not be read, using the defaults: {e.Message}");
+            return new HudConfig();
+        }
+    }
+
+    private void Clamp()
+    {
+        TimerRate = Math.Clamp(TimerRate, 1, 64);
+        SpeedRate = Math.Clamp(SpeedRate, 1, 64);
+        SyncRate = Math.Clamp(SyncRate, 1, 64);
+        PlaceRate = Math.Clamp(PlaceRate, 1, 64);
+        RankDisplay = RankDisplay?.Trim().ToLowerInvariant() is "text" or "both" or "icon" ? RankDisplay.Trim().ToLowerInvariant() : "icon";
+        SplitBarOverflow = SplitBarOverflow?.Trim().ToLowerInvariant() is "group" or "scroll" ? SplitBarOverflow.Trim().ToLowerInvariant() : "count";
+        SpeedBarMax = Math.Max(100, SpeedBarMax);
+        Defaults ??= new HudDefaults();
+    }
+}
+
+public sealed class HudDefaults
+{
+    public string Card { get; set; } = "bc";
+    public string CardSize { get; set; } = "m";
+    /// <summary>A spot, or "nx" for next to the card.</summary>
+    public string Cluster { get; set; } = "xu";
+    public string ClusterSize { get; set; } = "m";
+    /// <summary>A spot, or "card" for with the card.</summary>
+    public string Toast { get; set; } = "card";
+    public string ToastSize { get; set; } = "m";
+    public string Feed { get; set; } = "tr";
+    public string FeedSize { get; set; } = "m";
+    public bool Speed { get; set; } = true;
+    /// <summary>"grid" or "row".</summary>
+    public string KeysLayout { get; set; } = "grid";
+    public bool FeedOn { get; set; } = true;
+}

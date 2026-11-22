@@ -165,7 +165,10 @@ namespace SharpTimer
         public bool IsSpecTargetCached { get; set; }
         public string? PreSpeed { get; set; }
         public string? CachedPB { get; set; }
+        public int CachedPBTicks { get; set; }
         public string? CachedMapPlacement { get; set; }
+        /// <summary>Panorama HUD: what is being replayed ("sr", "pb", "wr", "top3").</summary>
+        public string? HudReplayKind { get; set; }
         public Dictionary<int, PlayerBonusPlacementInfo> CachedBonusInfo { get; set; } = new();
 
         //logic

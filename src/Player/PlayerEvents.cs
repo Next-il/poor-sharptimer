@@ -87,6 +87,8 @@ namespace SharpTimer
                         if (cmdJoinMsgEnabled)
                             PrintAllEnabledCommands(player);
 
+                        HudPlayerConnected(player);
+
                         if (connectMsgEnabled == true && !enableDb)
                             Utils.PrintToChatAll(Localizer["connect_message", player.PlayerName]);
                     }
@@ -119,6 +121,7 @@ namespace SharpTimer
             {
                 if (connectedPlayers.TryGetValue(player.Slot, out var connectedPlayer))
                 {
+                    if (!isForBot) HudPlayerLeft(player);
 
                     connectedPlayers.Remove(player.Slot);
 

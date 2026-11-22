@@ -961,9 +961,15 @@ namespace SharpTimer
                                     beatPB,
                                     bonusX, style, dBtimesFinished);
                                 
-                                Server.NextFrame(() => Utils.PrintToChat(player!, Localizer["gained_points",
-                                    playerName, Convert.ToInt32(newPts - oldPts),
-                                    newPts]));
+                                Server.NextFrame(() =>
+                                {
+                                    // The Panorama HUD puts the points on the result card instead.
+                                    HudPoints(player, Convert.ToInt32(newPts - oldPts));
+                                    if (HudWantsChat(player, HudSettings.RecordsInChat))
+                                        Utils.PrintToChat(player!, Localizer["gained_points",
+                                            playerName, Convert.ToInt32(newPts - oldPts),
+                                            newPts]);
+                                });
                             }
 
                             if (enableReplays)
@@ -1107,9 +1113,15 @@ namespace SharpTimer
                                     beatPB,
                                     bonusX, style, dBtimesFinished);
                                 
-                                Server.NextFrame(() => Utils.PrintToChat(player!, Localizer["gained_points",
-                                    playerName, Convert.ToInt32(newPts - oldPts),
-                                    newPts]));
+                                Server.NextFrame(() =>
+                                {
+                                    // The Panorama HUD puts the points on the result card instead.
+                                    HudPoints(player, Convert.ToInt32(newPts - oldPts));
+                                    if (HudWantsChat(player, HudSettings.RecordsInChat))
+                                        Utils.PrintToChat(player!, Localizer["gained_points",
+                                            playerName, Convert.ToInt32(newPts - oldPts),
+                                            newPts]);
+                                });
                             }
                             
                             Server.NextFrame(() =>

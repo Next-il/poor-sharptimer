@@ -336,6 +336,7 @@ namespace SharpTimer
             //if (!wr) await GetReplayVIPGif(!self ? srSteamID : pbSteamID, slot);
 
             playerTimers[slot].IsReplaying = !playerTimers[slot].IsReplaying;
+            playerTimers[slot].HudReplayKind = wr ? "wr" : self ? "pb" : top10 <= 1 ? "sr" : $"top{top10}";
 
             if (wr)
                 playerTimers[slot].ReplayHUDString = $"{wrPlayerName} | {wrTime}";
@@ -463,6 +464,8 @@ namespace SharpTimer
             else
                 Utils.PrintToChat(player, Localizer["printtime_shown"]);
 
+            HudFlagsChanged(player);
+
             if (enableDb)
             {
                 bool playerValid = IsAllowedPlayer(player);
@@ -472,7 +475,7 @@ namespace SharpTimer
             Utils.LogDebug($"Hide Chat Speed set to: {playerTimers[slot].HideChatSpeed} for {playerName}");
         }
 
-        [ConsoleCommand("css_hud", "Draws/Hides The timer HUD")]
+        [ConsoleCommand("css_hud", "Opens the HUD settings (where each part goes). !hud on / !hud off draws or hides the timer HUD")]
         [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
         public void HUDSwitchCommand(CCSPlayerController? player, CommandInfo command)
         {
@@ -485,16 +488,28 @@ namespace SharpTimer
 
             Utils.LogDebug($"{playerName} calling css_hud...");
 
+            // The Panorama HUD: plain !hud opens the placement menu. Without it (or when the menu cannot reach the
+            // player) !hud toggles the timer HUD as it always did; "on" and "off" set it either way.
+            var arg = command.ArgCount > 1 ? command.GetArg(1).Trim().ToLowerInvariant() : "";
+            if (arg.Length == 0 && HudMenuPanel != null && HudOpenMenu(player))
+                return;
+
             if (CommandCooldown(player))
                 return;
 
-            playerTimers[slot].HideTimerHud = !playerTimers[slot].HideTimerHud;
+            playerTimers[slot].HideTimerHud = arg switch
+            {
+                "on" or "show" or "1" => false,
+                "off" or "hide" or "0" => true,
+                _ => !playerTimers[slot].HideTimerHud,
+            };
 
             if (playerTimers[slot].HideTimerHud)
                 Utils.PrintToChat(player, Localizer["hud_hidden"]);
             else
                 Utils.PrintToChat(player, Localizer["hud_shown"]);
 
+            HudFlagsChanged(player);
             Utils.LogDebug($"Hide Timer HUD set to: {playerTimers[slot].HideTimerHud} for {playerName}");
 
             if (enableDb)
@@ -526,6 +541,8 @@ namespace SharpTimer
                 Utils.PrintToChat(player, Localizer["keys_hidden"]);
             else
                 Utils.PrintToChat(player, Localizer["keys_shown"]);
+
+            HudFlagsChanged(player);
 
             Utils.LogDebug($"Hide Timer HUD set to: {playerTimers[slot].HideKeys} for {playerName}");
 
@@ -884,6 +901,7 @@ namespace SharpTimer
                     if (!IsPlayerOrSpectator(player)) return;
                     playerTimers[slot].RankHUDIcon = $"{(!string.IsNullOrEmpty(rankIcon) ? $" {rankIcon}" : "")}";
                     playerTimers[slot].CachedPB = $"{(pbTicks != 0 ? $" {Utils.FormatTime(pbTicks)}" : "")}";
+                    playerTimers[slot].CachedPBTicks = pbTicks;
                     playerTimers[slot].CachedRank = ranking;
                     playerTimers[slot].CachedMapPlacement = mapPlacement;
 
@@ -1339,7 +1357,8 @@ namespace SharpTimer
 
             if (!player!.PlayerPawn.Value!.AbsVelocity.IsZero())
             {
-                Utils.PrintToChat(player, Localizer["styles_moving"]);
+                if (HudReply(player, "STYLE", "", "Stop moving to change your style", true))
+                    Utils.PrintToChat(player, Localizer["styles_moving"]);
                 return;
             }
 
@@ -1383,7 +1402,7 @@ namespace SharpTimer
                     case 11:
                     case 12:
                         setStyle(player, desiredStyleInt);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(desiredStyleInt)]);
+                        StyleReply(player, desiredStyleInt);
                         break;
                     default:
                         Utils.PrintToChat(player, Localizer["style_not_found", desiredStyleInt]);
@@ -1400,67 +1419,67 @@ namespace SharpTimer
                     case "normal":
                     case "nrm":
                         setStyle(player, 0);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(0)]);
+                        StyleReply(player, 0);
                         break;
                     case "lowgravity":
                     case "lowgrav":
                     case "lg":
                         setStyle(player, 1);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(1)]);
+                        StyleReply(player, 1);
                         break;
                     case "sideways":
                     case "sw":
                         setStyle(player, 2);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(2)]);
+                        StyleReply(player, 2);
                         break;
                     case "wonly":
                     case "onlyw":
                         setStyle(player, 3);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(3)]);
+                        StyleReply(player, 3);
                         break;
                     case "400vel":
                         setStyle(player, 4);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(4)]);
+                        StyleReply(player, 4);
                         break;
                     case "highgravity":
                     case "highgrav":
                     case "hg":
                         setStyle(player, 5);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(5)]);
+                        StyleReply(player, 5);
                         break;
                     case "aonly":
                     case "onlya":
                         setStyle(player, 6);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(6)]);
+                        StyleReply(player, 6);
                         break;
                     case "donly":
                     case "onlyd":
                         setStyle(player, 7);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(7)]);
+                        StyleReply(player, 7);
                         break;
                     case "sonly":
                     case "onlys":
                         setStyle(player, 8);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(8)]);
+                        StyleReply(player, 8);
                         break;
                     case "halfsideways":
                     case "hsw":
                         setStyle(player, 9);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(9)]);
+                        StyleReply(player, 9);
                         break;
                     case "fastforward":
                     case "ff":
                         setStyle(player, 10);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(10)]);
+                        StyleReply(player, 10);
                         break;
                     case "parachute":
                     case "para":
                         setStyle(player, 11);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(11)]);
+                        StyleReply(player, 11);
                         break;
                     case "tas":
                         setStyle(player, 12);
-                        Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(12)]);
+                        StyleReply(player, 12);
                         break;
                     default:
                         Utils.PrintToChat(player, Localizer["style_not_found", styleLowerCase]);

@@ -50,6 +50,11 @@ jobs:
             echo "::error::SharpTimer.dll not found in Build after build"
             exit 1
           fi
+          # The Panorama HUD (src/Hud) loads PanoramaManager from the plugin's own folder.
+          if [ ! -f Build/addons/counterstrikesharp/plugins/SharpTimer/PanoramaManager.dll ]; then
+            echo "::error::PanoramaManager.dll not found next to SharpTimer.dll"
+            exit 1
+          fi
 
           VERSION="${{ steps.version.outputs.version }}"
           FOLDER="SharpTimer-v${VERSION}"

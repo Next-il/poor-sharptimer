@@ -30,6 +30,7 @@ namespace SharpTimer
                 int currentTick = Server.TickCount;
 
                 UpdateGameRestartFlag();
+                HudTick();
 
                 foreach (CCSPlayerController player in connectedPlayers.Values)
                 {
@@ -41,6 +42,10 @@ namespace SharpTimer
 
                     if ((CsTeam)player.TeamNum == CsTeam.Spectator || !player.PawnIsAlive)
                     {
+                        // The Panorama HUD keeps its own rates; the center HTML is for players it cannot reach.
+                        if (HudDriveSpectator(player, currentTick))
+                            continue;
+
                         if (currentTick % (64 / hudTickrate) != 0)
                             continue;
 
@@ -303,14 +308,19 @@ namespace SharpTimer
                             }
                         }
 
-                        // timer hud content
+                        // timer hud: the Panorama HUD at its own rates, or the center HTML for a player it cannot reach
+                        bool panorama = HudDrive(player, playerTimer, currentTick);
+
                         if (currentTick % (64 / hudTickrate) != 0)
                             continue;
 
-                        string hudContent = GetHudContent(playerTimer, player);
+                        if (!panorama)
+                        {
+                            string hudContent = GetHudContent(playerTimer, player);
 
-                        if (!string.IsNullOrEmpty(hudContent))
-                            player.PrintToCenterHtml(hudContent);
+                            if (!string.IsNullOrEmpty(hudContent))
+                                player.PrintToCenterHtml(hudContent);
+                        }
                         
                         // idk what this is for
                         playerTimer.MovementService!.LegacyJump.OldJumpPressed = false;

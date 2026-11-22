@@ -100,7 +100,8 @@ namespace SharpTimer
                                         $"{((replayFrame.Buttons & PlayerButtons.Jump) != 0 ? "J" : "_")} " +
                                         $"{((replayFrame.Buttons & PlayerButtons.Duck) != 0 ? "C" : "_")}";
 
-                    if (value.HideKeys != true && value.IsReplaying == true && keysOverlayEnabled == true)
+                    // The Panorama HUD lights the replay's keys on the keys overlay instead.
+                    if (value.HideKeys != true && value.IsReplaying == true && keysOverlayEnabled == true && !HudReaches(player))
                     {
                         player.PrintToCenter(replayButtons);
                     }

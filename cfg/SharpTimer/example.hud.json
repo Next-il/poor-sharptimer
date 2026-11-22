@@ -1,0 +1,56 @@
+{
+  // SharpTimer Panorama HUD. Copy to hud.json to change anything; every key is optional and the plugin never
+  // writes this file. Values below are the code defaults. Read on plugin load and on every map start
+  // ("Enabled" only on a plugin load).
+
+  // false = SharpTimer's center HTML, exactly as before. true = the Panorama HUD (needs the workshop addon with
+  // sharptimer_hud / sharptimer_menu); the center HTML stays for any player the panel cannot reach.
+  "Enabled": true,
+
+  // Updates per second. Speed is only sent when the number changed; keys whenever a key changes.
+  "TimerRate": 10,
+  "SpeedRate": 16,
+  "SyncRate": 4,
+  "PlaceRate": 2,
+
+  // Open questions from the design, each at today's behaviour:
+  "FeedFinishes": true,          // plain finishes go to everyone's records feed (false: only PBs and records)
+  "LivePlace": true,             // the live "#3" on the card while running
+  "RankDisplay": "icon",         // "icon" (the rank PNG, as today), "text" (name in the rank colour) or "both"
+  "SplitBarOverflow": "count",   // more than 16 stages/checkpoints: "count" (no bar), "group" or "scroll"
+  "ShowWorldRecord": false,      // WR as the card's third time (needs a global API key; this fork has none)
+  // The SR chat ad is sharptimer_ad_sr_enabled in config.cfg, as before.
+
+  // Chat lines the HUD replaces. true keeps them in chat as well.
+  "SplitsInChat": false,
+  "RecordsInChat": false,
+  "StartSpeedInChat": false,
+  "RepliesInChat": false,
+
+  // Seconds.
+  "ResultSeconds": 6,
+  "ToastSeconds": 3,
+  "FeedSeconds": 4.5,
+  "FeedRecordSeconds": 6.5,
+  "StartChipSeconds": 2,
+
+  // The speed bar's full scale in u/s (50 steps).
+  "SpeedBarMax": 3500,
+
+  // What a player gets until they change it with !hud.
+  // Spots: tl tc tr (top left/center/right), ml mr (middle left/right), xa xu (above/under the crosshair),
+  // bc br (bottom center/right). Cluster also takes "nx" (next to the card); Toast also takes "card" (with it).
+  "Defaults": {
+    "Card": "bc",
+    "CardSize": "m",
+    "Cluster": "xu",
+    "ClusterSize": "m",
+    "Toast": "card",
+    "ToastSize": "m",
+    "Feed": "tr",
+    "FeedSize": "m",
+    "Speed": true,
+    "KeysLayout": "grid",
+    "FeedOn": true
+  }
+}

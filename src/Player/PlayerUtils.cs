@@ -202,11 +202,12 @@ namespace SharpTimer
         {
             int startSpeed = int.Parse(GetCurrentPlayerSpeed(player));
             int printSpeed = (maxStartingSpeedEnabled && startSpeed > maxStartingSpeed) ? maxStartingSpeed : startSpeed;
-            if (!playerTimers[player.Slot].HideChatSpeed)
+            // The Panorama HUD shows it as the chip under the speed instead.
+            if (!playerTimers[player.Slot].HideChatSpeed && HudWantsChat(player, HudSettings.StartSpeedInChat))
             {
                 Utils.PrintToChat(player, $"{Localizer["start_speed"]} {ChatColors.Olive}{printSpeed}");
             }
-            Utils.PrintToSpec(player, $"{Localizer["start_speed"]} {ChatColors.Olive}{printSpeed}");
+            HudPrintToSpec(player, $"{Localizer["start_speed"]} {ChatColors.Olive}{printSpeed}", HudSettings.StartSpeedInChat);
         }
       
         private void RemovePlayerCollision(CCSPlayerController? player)
@@ -664,41 +665,47 @@ namespace SharpTimer
 
             Server.NextFrame(() =>
             {
+                // The Panorama HUD: the runner's card turns into the result, everyone else gets one feed line.
+                // The chat lines below go to whoever the HUD does not reach (all of them with RecordsInChat).
+                var keepChat = HudSettings.RecordsInChat;
+                if (IsAllowedPlayer(player))
+                    HudFinishResult(player, playerName, newSR, beatPB, newticks, oldticks, prevSR, ranking, timesFinished, bonusX);
+
                 if (newSR)
                 {
                     if (prevSR != 0)
                     {
                         timeDifference = $"[{Utils.FormatTimeDifference(newticks, prevSR)}{ChatColors.White}] ";
                     }
-                    if (bonusX != 0) Utils.PrintToChatAll(Localizer["new_server_record_bonus", playerName, bonusX]);
+                    if (bonusX != 0) HudPrintToChatAll(Localizer["new_server_record_bonus", playerName, bonusX], keepChat, player);
                     else
                     {
-                        Utils.PrintToChatAll(Localizer["new_server_record", playerName]);
+                        HudPrintToChatAll(Localizer["new_server_record", playerName], keepChat, player);
                         PlaySound(player, srSound, srSoundAll);
                     }
                     if (discordWebhookPrintSR && discordWebhookEnabled && enableDb) _ = Task.Run(async () => await DiscordRecordMessage(player, playerName, newTime, steamID, ranking, timesFinished, true, timeDifferenceNoCol, bonusX));
                 }
                 else if (beatPB)
                 {
-                    if (bonusX != 0) Utils.PrintToChatAll(Localizer["new_pb_record_bonus", playerName, bonusX]);
-                    else Utils.PrintToChatAll(Localizer["new_pb_record", playerName]);
+                    if (bonusX != 0) HudPrintToChatAll(Localizer["new_pb_record_bonus", playerName, bonusX], keepChat, player);
+                    else HudPrintToChatAll(Localizer["new_pb_record", playerName], keepChat, player);
                     if (discordWebhookPrintPB && discordWebhookEnabled && enableDb) _ = Task.Run(async () => await DiscordRecordMessage(player, playerName, newTime, steamID, ranking, timesFinished, false, timeDifferenceNoCol, bonusX));
                     PlaySound(player, pbSound);
                 }
                 else
                 {
-                    if (bonusX != 0) Utils.PrintToChatAll(Localizer["map_finish_bonus", playerName, bonusX]);
-                    else Utils.PrintToChatAll(Localizer["map_finish", playerName]);
+                    if (bonusX != 0) HudPrintToChatAll(Localizer["map_finish_bonus", playerName, bonusX], keepChat, player);
+                    else HudPrintToChatAll(Localizer["map_finish", playerName], keepChat, player);
                     if (discordWebhookPrintPB && discordWebhookEnabled && timesFinished == 1 && enableDb) _ = Task.Run(async () => await DiscordRecordMessage(player, playerName, newTime, steamID, ranking, timesFinished, false, timeDifferenceNoCol, bonusX));
                     PlaySound(player, timerSound);
                 }
 
                 if (enableDb || bonusX != 0)
-                    Utils.PrintToChatAll(Localizer["map_finish_rank", ranking, timesFinished]);
+                    HudPrintToChatAll(Localizer["map_finish_rank", ranking, timesFinished], keepChat, player);
 
-                Utils.PrintToChatAll(Localizer["timer_time", newTime, timeDifference]);
-                if (enableStyles && playerTimers[player.Slot].currentStyle != 0) Utils.PrintToChatAll(Localizer["timer_style", GetNamedStyle(style)]);
-                if (mode != GetModeName(defaultMode))Utils.PrintToChatAll(Localizer["timer_mode", mode]);
+                HudPrintToChatAll(Localizer["timer_time", newTime, timeDifference], keepChat, player);
+                if (enableStyles && playerTimers[player.Slot].currentStyle != 0) HudPrintToChatAll(Localizer["timer_style", GetNamedStyle(style)], keepChat, player);
+                if (mode != GetModeName(defaultMode))HudPrintToChatAll(Localizer["timer_mode", mode], keepChat, player);
                 if (enableReplays && enableSRreplayBot && newSR && (oldticks > newticks || oldticks == 0) && mode == GetModeName(defaultMode))
                     _ = Task.Run(async () => await SpawnReplayBot());
                 
@@ -746,10 +753,12 @@ namespace SharpTimer
                     var recordKey = (useStageTriggers || !useCheckpointTriggers)
                         ? "new_stage_server_record"
                         : "new_cp_server_record";
-                    Utils.PrintToChatAll(Localizer[recordKey, playerName]);
+                    if (IsAllowedPlayer(player))
+                        HudStageRecord(player, playerName, stage, newticks, prevSR, recordKey == "new_cp_server_record");
+                    HudPrintToChatAll(Localizer[recordKey, playerName], HudSettings.RecordsInChat, player);
 
                     PlaySound(player, srSound, stageSoundAll ? true : false);
-                    Utils.PrintToChatAll(Localizer["timer_time", newTime, timeDifference]);
+                    HudPrintToChatAll(Localizer["timer_time", newTime, timeDifference], HudSettings.RecordsInChat, player);
                     //TODO: Discord webhook stage sr
                     // if (discordWebhookPrintSR && discordWebhookEnabled && enableDb) _ = Task.Run(async () => await DiscordRecordMessage(player, playerName, newTime, steamID, ranking, timesFinished, true, timeDifferenceNoCol, bonusX));
                 }

@@ -125,6 +125,8 @@ public partial class SharpTimer : BasePlugin
 
         CheckMissingFakeConvars();
 
+        HudLoad(hotReload);
+
         currentMapName = Server.MapName;
 
         string recordsFileName = $"SharpTimer/PlayerRecords/";
@@ -185,6 +187,8 @@ public partial class SharpTimer : BasePlugin
 
     public override void Unload(bool hotReload)
     {
+        HudUnload();
+
         if (isLinux)
             RunCommand?.Unhook(OnRunCommandPre, HookMode.Pre);
 

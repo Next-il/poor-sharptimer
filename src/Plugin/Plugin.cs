@@ -15,6 +15,7 @@ public partial class SharpTimer
         try
         {
             _gameRules = null;
+            HudMapStart();
             Server.NextFrame(() =>
             {
                 Utils.LogDebug("OnMapStart:");

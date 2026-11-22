@@ -1,0 +1,510 @@
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
+using PanoramaManager;
+using SharpTimer.Hud;
+
+namespace SharpTimer;
+
+/// <summary>
+/// The Panorama HUD's hooks into SharpTimer: start-up, what the HUD needs to read from the timer, and the chat
+/// lines it replaces. Everything here is a no-op while cfg/SharpTimer/hud.json says "Enabled": false, so the
+/// center HTML and every chat line are exactly as before.
+/// </summary>
+public partial class SharpTimer
+{
+    public HudConfig HudSettings { get; private set; } = new();
+    internal HudPrefsStore HudPrefStore = null!;
+    internal TimerHud? TimerHud;
+    internal HudMenu? HudMenuPanel;
+
+    private string HudConfigPath => Path.Join(gameDir, "csgo", "cfg", "SharpTimer", "hud.json");
+
+    private float _hudErrorAt = -100f;
+
+    /// <summary>Runs one HUD step. The HUD is called from inside the timer's tick and its trigger handlers, so an
+    /// exception here must never reach them: it is logged (at most every 10 seconds) and swallowed.</summary>
+    private void HudSafe(string what, Action step)
+    {
+        try
+        {
+            step();
+        }
+        catch (Exception e)
+        {
+            HudError(what, e);
+        }
+    }
+
+    private void HudError(string what, Exception e)
+    {
+        var now = Server.CurrentTime;
+        if (now - _hudErrorAt < 10f && now >= _hudErrorAt) return;
+        _hudErrorAt = now;
+        Utils.LogError($"[HUD] {what}: {e}");
+    }
+
+    /// <summary>PlayerOnTick: the Panorama HUD for a living player. False: print the center HTML.</summary>
+    private bool HudDrive(CCSPlayerController player, PlayerTimerInfo timer, int tick)
+    {
+        if (TimerHud == null || player.IsBot) return false;
+        try
+        {
+            return TimerHud.Drive(player, player, timer, tick);
+        }
+        catch (Exception e)
+        {
+            HudError("draw", e);
+            return false;
+        }
+    }
+
+    /// <summary>PlayerOnTick: the Panorama HUD for a spectator or a dead player. False: print the center HTML.</summary>
+    private bool HudDriveSpectator(CCSPlayerController player, int tick)
+    {
+        if (TimerHud == null || player.IsBot) return false;
+        try
+        {
+            return TimerHud.DriveSpectator(player, tick);
+        }
+        catch (Exception e)
+        {
+            HudError("draw spectator", e);
+            return false;
+        }
+    }
+
+    private void HudTick()
+    {
+        if (TimerHud != null) HudSafe("feed", TimerHud.Tick);
+    }
+
+    private void HudLoad(bool hotReload)
+    {
+        HudSettings = HudConfig.Load(HudConfigPath, Utils.LogError);
+        HudPrefStore = new HudPrefsStore(this);
+        if (!HudSettings.Enabled)
+        {
+            Utils.LogDebug("[HUD] Panorama HUD off (hud.json Enabled = false), using the center HTML");
+            return;
+        }
+
+        try
+        {
+            Panorama.Init(this);
+            TimerHud = new TimerHud(this);
+            TimerHud.Init();
+            if (!TimerHud.Enabled)
+            {
+                TimerHud = null;
+                return;
+            }
+
+            HudMenuPanel = new HudMenu(this, TimerHud);
+            HudMenuPanel.Init();
+        }
+        catch (Exception e)
+        {
+            Utils.LogError($"[HUD] Panorama failed to start, using the center HTML: {e.Message}");
+            TimerHud = null;
+            HudMenuPanel = null;
+            return;
+        }
+
+        if (hotReload)
+            foreach (var p in Utilities.GetPlayers())
+                TimerHud.Attach(p);
+    }
+
+    private void HudUnload()
+    {
+        HudMenuPanel?.Dispose();
+        TimerHud?.Dispose();
+        HudMenuPanel = null;
+        TimerHud = null;
+        try { Panorama.Shutdown(); } catch { /* already down */ }
+    }
+
+    /// <summary>Map start: hud.json again (Enabled itself only changes on a plugin load) and fresh timers.</summary>
+    private void HudMapStart()
+    {
+        var fresh = HudConfig.Load(HudConfigPath, Utils.LogError);
+        if (fresh.Enabled != HudSettings.Enabled)
+            Utils.LogError("[HUD] hud.json Enabled changed: it takes effect on the next plugin load");
+        fresh.Enabled = HudSettings.Enabled;
+        HudSettings = fresh;
+        if (TimerHud != null) HudSafe("map start", TimerHud.MapStart);
+    }
+
+    private void HudPlayerConnected(CCSPlayerController player)
+    {
+        if (TimerHud != null) HudSafe("connect", () => TimerHud.Attach(player));
+    }
+
+    private void HudPlayerLeft(CCSPlayerController player) => HudSafe("disconnect", () =>
+    {
+        TimerHud?.Forget(player.Slot);
+        HudMenuPanel?.Forget(player.Slot);
+        HudPrefStore?.Forget(player.SteamID);
+    });
+
+    // ------------------------------------------------------------------ chat the HUD replaces
+
+    internal bool HudReaches(CCSPlayerController? player) => TimerHud != null && TimerHud.Reaches(player);
+
+    /// <summary>The panel reaches the player and they have not hidden the timer HUD (!hud off): the card and the
+    /// toast show what the chat line would have said.</summary>
+    internal bool HudShowsCard(CCSPlayerController? player) =>
+        HudReaches(player) && !(playerTimers.TryGetValue(player!.Slot, out var t) && t.HideTimerHud);
+
+    /// <summary>Whether this player still gets a chat line about their own run that the HUD shows: always without
+    /// the HUD, when the panel cannot reach them or they hid the timer HUD, otherwise only when the config keeps
+    /// that line in chat.</summary>
+    internal bool HudWantsChat(CCSPlayerController? player, bool keep) => keep || !HudShowsCard(player);
+
+    /// <summary>Utils.PrintToChatAll for a finish or record line: the runner sees it on the card, everyone else in
+    /// the records feed, so it goes to whoever the HUD does not cover.</summary>
+    internal void HudPrintToChatAll(string message, bool keep, CCSPlayerController? runner = null)
+    {
+        if (TimerHud == null || keep)
+        {
+            Utils.PrintToChatAll(message);
+            return;
+        }
+
+        foreach (var p in Utilities.GetPlayers())
+        {
+            if (p is not { IsValid: true, IsBot: false }) continue;
+            var covered = runner != null && p.Slot == runner.Slot ? HudShowsCard(p) : HudReaches(p);
+            if (!covered) p.PrintToChat($" {Localizer["prefix"]} {message}");
+        }
+    }
+
+    /// <summary>Utils.PrintToSpec for a line the HUD shows: spectators see the runner's toast instead.</summary>
+    internal void HudPrintToSpec(CCSPlayerController target, string message, bool keep)
+    {
+        if (TimerHud == null || keep)
+        {
+            Utils.PrintToSpec(target, message);
+            return;
+        }
+
+        if (target == null || !target.IsValid) return;
+        foreach (var spectator in Utilities.GetPlayers())
+        {
+            if (spectator is not { IsValid: true } || spectator.TeamNum != (byte)CsTeam.Spectator || HudShowsCard(spectator)) continue;
+            if (spectator.Pawn.Value?.ObserverServices?.ObserverTarget.Index == target.Pawn.Index)
+                spectator.PrintToChat($"{Localizer["prefix"]} *{target.PlayerName}* - {message}");
+        }
+    }
+
+    /// <summary>The split lines PrintToSpec copies to spectators: those the HUD reaches see the runner's toast.</summary>
+    internal void HudSplitToSpec(CCSPlayerController target, string message) =>
+        HudPrintToSpec(target, message, HudSettings.SplitsInChat);
+
+    // ------------------------------------------------------------------ events into the HUD
+
+    private void HudTimerStarted(CCSPlayerController player)
+    {
+        if (TimerHud == null) return;
+        HudSafe("timer start", () =>
+        {
+            var speed = int.TryParse(GetCurrentPlayerSpeed(player), out var s) ? s : 0;
+            var capped = maxStartingSpeedEnabled && speed > maxStartingSpeed;
+            TimerHud.TimerStarted(player, capped ? maxStartingSpeed : speed, capped);
+            if (!printStartSpeedEnabled) TimerHud.ClearChip(player);
+        });
+    }
+
+    private void HudFinished(CCSPlayerController player, int ticks, bool bonus)
+    {
+        if (TimerHud == null || !playerTimers.TryGetValue(player.Slot, out var t)) return;
+        HudSafe("finish", () =>
+        {
+            var pb = bonus
+                ? (t.CachedBonusInfo.TryGetValue(t.BonusStage, out var b) ? b.PbTicks : 0)
+                : t.CachedPBTicks;
+            var (kind, count, _, _) = HudProgress(t);
+            if (!bonus && kind == "STAGE" && count > 0) TimerHud.MarkSegment(player, count - 1);
+            TimerHud.Finished(player, ticks, pb);
+        });
+    }
+
+    private void HudCancelled(CCSPlayerController player, string reason)
+    {
+        if (TimerHud != null && playerTimers.TryGetValue(player.Slot, out var t))
+            HudSafe("cancel", () => TimerHud.Cancelled(player, t.TimerTicks, reason));
+    }
+
+    private void HudPoints(CCSPlayerController? player, int gained)
+    {
+        if (TimerHud != null && player != null && IsAllowedPlayer(player))
+            HudSafe("points", () => TimerHud.Points(player, gained));
+    }
+
+    /// <summary>A stage or checkpoint split, from HandlePlayerStageTimes / HandlePlayerCheckpointTimes.</summary>
+    private void HudSplit(CCSPlayerController player, string label, int segment, int ticks, int pbTicks, int srTicks,
+        string speed, string pbSpeed, string srSpeed, bool showSr)
+    {
+        if (TimerHud == null) return;
+        HudSafe("split", () => HudSplitCore(player, label, segment, ticks, pbTicks, srTicks, speed, pbSpeed, showSr));
+    }
+
+    private void HudSplitCore(CCSPlayerController player, string label, int segment, int ticks, int pbTicks, int srTicks,
+        string speed, string pbSpeed, bool showSr)
+    {
+        var hud = TimerHud!;
+
+        var mark = pbTicks > 0 ? (ticks < pbTicks ? SplitMark.Ahead : SplitMark.Behind) : SplitMark.Done;
+        var pbDiff = pbTicks > 0 ? HudLayout.Diff(ticks, pbTicks) : "";
+        var srOn = showSr && srTicks > 0 && srTicks != pbTicks;
+        var srDiff = srOn ? HudLayout.Diff(ticks, srTicks) : "";
+
+        var speedText = "";
+        var speedDiff = "";
+        var speedSign = 0;
+        if (int.TryParse(speed, out var v) && v >= 100)
+        {
+            speedText = $"{v} u/s";
+            if (int.TryParse(pbSpeed, out var pv) && pv > 0)
+            {
+                var d = v - pv;
+                speedDiff = d >= 0 ? $"+{d}" : d.ToString();
+                speedSign = d >= 0 ? -1 : 1;
+            }
+        }
+
+        hud.Split(player, segment, mark, new HudToast(true, label, HudLayout.Time(ticks),
+            pbDiff, ticks < pbTicks ? -1 : 1,
+            srDiff, ticks < srTicks ? -1 : 1,
+            speedText, speedDiff, speedSign));
+    }
+
+    /// <summary>A finish has been saved: the card's result, and one feed line for everyone else.</summary>
+    private void HudFinishResult(CCSPlayerController player, string playerName, bool newSr, bool beatPb, int newTicks,
+        int oldTicks, int prevSr, string ranking, int timesFinished, int bonus)
+    {
+        if (TimerHud == null) return;
+        HudSafe("finish result", () => HudFinishResultCore(player, playerName, newSr, beatPb, newTicks, oldTicks, prevSr, ranking, timesFinished, bonus));
+    }
+
+    private void HudFinishResultCore(CCSPlayerController player, string playerName, bool newSr, bool beatPb, int newTicks,
+        int oldTicks, int prevSr, string ranking, int timesFinished, int bonus)
+    {
+        var hud = TimerHud!;
+        var kind = newSr ? ResultKind.Sr : beatPb ? ResultKind.Pb : ResultKind.Done;
+        hud.FinishResult(player, kind, newTicks, oldTicks, prevSr, ranking, timesFinished, bonus);
+
+        if (kind == ResultKind.Done && !HudSettings.FeedFinishes) return;
+        var reference = newSr && prevSr > 0 ? prevSr : oldTicks;
+        var diff = kind != ResultKind.Done && reference > 0 && newTicks < reference ? HudLayout.Diff(newTicks, reference) : "";
+        var b = bonus != 0 ? $"B{bonus} " : "";
+        var tag = kind switch { ResultKind.Sr => b + "NEW SR", ResultKind.Pb => b + "PB", _ => bonus != 0 ? $"BONUS {bonus}" : "FINISH" };
+        hud.Feed(new FeedLine(kind switch { ResultKind.Sr => FeedKind.Sr, ResultKind.Pb => FeedKind.Pb, _ => FeedKind.Finish },
+            playerName, tag, HudLayout.Time(newTicks), diff), player.Slot);
+    }
+
+    private void HudStageRecord(CCSPlayerController player, string playerName, int stage, int newTicks, int prevSr, bool checkpoint)
+    {
+        if (TimerHud == null) return;
+        HudSafe("stage record", () => HudStageRecordCore(player, playerName, stage, newTicks, prevSr, checkpoint));
+    }
+
+    private void HudStageRecordCore(CCSPlayerController player, string playerName, int stage, int newTicks, int prevSr, bool checkpoint)
+    {
+        var hud = TimerHud!;
+        var diff = prevSr > 0 ? HudLayout.Diff(newTicks, prevSr) : "";
+        hud.Split(player, -1, SplitMark.Done, new HudToast(true, (checkpoint ? "CP " : "Stage ") + stage,
+            Time: HudLayout.Time(newTicks), SrDiff: diff, SrSign: -1,
+            Speed: checkpoint ? "NEW CHECKPOINT RECORD" : "NEW STAGE RECORD"));
+        hud.Feed(new FeedLine(FeedKind.Stage, playerName, (checkpoint ? "CP SR " : "STAGE SR ") + stage,
+            HudLayout.Time(newTicks), diff), player.Slot);
+    }
+
+    /// <summary>A reply to a command the HUD shows as the toast. True when the chat line should still be printed.</summary>
+    internal bool HudReply(CCSPlayerController? player, string key, string bold, string message, bool error = false)
+    {
+        if (player == null || TimerHud == null || !TimerHud.Reaches(player)) return true;
+        try
+        {
+            TimerHud.Reply(player, key, bold, message, error);
+        }
+        catch (Exception e)
+        {
+            HudError("reply", e);
+            return true;
+        }
+
+        return HudSettings.RepliesInChat;
+    }
+
+    /// <summary>"Style set to: Sideways", as the toast: the style and what it means while the timer runs.</summary>
+    private void StyleReply(CCSPlayerController player, int style)
+    {
+        var note = style switch
+        {
+            0 => "every key",
+            1 => "less gravity",
+            2 => "W and S only while the timer runs",
+            3 => "W only while the timer runs",
+            4 => "speed capped at 400",
+            5 => "more gravity",
+            6 => "A only while the timer runs",
+            7 => "D only while the timer runs",
+            8 => "S only while the timer runs",
+            9 => "two keys at once while the timer runs",
+            10 => "faster in the air",
+            11 => "hold E to glide",
+            12 => "tool assisted",
+            _ => "",
+        };
+        if (HudReply(player, "STYLE", GetNamedStyle(style), note.Length > 0 ? "\u00b7 " + note : ""))
+            Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(style)]);
+    }
+
+    private bool HudOpenMenu(CCSPlayerController player)
+    {
+        try
+        {
+            return HudMenuPanel!.Open(player);
+        }
+        catch (Exception e)
+        {
+            HudError("menu", e);
+            return false;
+        }
+    }
+
+    /// <summary>The flags SharpTimer already keeps in PlayerStats, set from the menu.</summary>
+    internal void HudSetFlag(CCSPlayerController player, bool? hideTimerHud = null, bool? hideKeys = null, bool? hideSplits = null)
+    {
+        if (!playerTimers.TryGetValue(player.Slot, out var t)) return;
+        if (hideTimerHud is { } h) t.HideTimerHud = h;
+        if (hideKeys is { } k) t.HideKeys = k;
+        if (hideSplits is { } s) t.HideChatSpeed = s;
+
+        HudFlagsChanged(player);
+        if (enableDb)
+        {
+            var steamId = player.SteamID.ToString();
+            var name = player.PlayerName;
+            var slot = player.Slot;
+            var valid = IsAllowedPlayer(player);
+            _ = Task.Run(async () => await SetPlayerStats(player, steamId, name, slot, valid));
+        }
+    }
+
+    /// <summary>!hud on|off, !keys or !splits changed a flag: the HUD and an open menu follow.</summary>
+    internal void HudFlagsChanged(CCSPlayerController player) => HudSafe("flags", () =>
+    {
+        TimerHud?.PrefsChanged(player);
+        HudMenuPanel?.Refresh(player);
+    });
+
+    // ------------------------------------------------------------------ what the HUD reads from the timer
+
+    internal CCSPlayerController? HudSpecTarget(CCSPlayerController spectator)
+    {
+        var index = spectator.Pawn.Value?.ObserverServices?.ObserverTarget.Index;
+        if (index == null) return null;
+        return specTargets.TryGetValue(index.Value, out var target) && target is { IsValid: true } ? target : null;
+    }
+
+    internal int HudReplayFrame(int slot) => playerReplays.TryGetValue(slot, out var r) ? Math.Max(0, r.CurrentPlaybackFrame) : 0;
+
+    internal int HudReplayLength(int slot) => playerReplays.TryGetValue(slot, out var r) ? r.replayFrames.Count : 0;
+
+    internal PlayerButtons HudReplayButtons(int slot)
+    {
+        if (!playerReplays.TryGetValue(slot, out var r) || r.replayFrames.Count == 0) return 0;
+        var i = Math.Clamp(r.CurrentPlaybackFrame - 1, 0, r.replayFrames.Count - 1);
+        return r.replayFrames[i].Buttons ?? 0;
+    }
+
+    internal string HudReplayKind(int slot) =>
+        playerTimers.TryGetValue(slot, out var t) && !string.IsNullOrEmpty(t.HudReplayKind) ? t.HudReplayKind : "sr";
+
+    /// <summary>ReplayHUDString is "name | 1:19.902".</summary>
+    internal (string Name, string Time) HudReplayHolder(int slot)
+    {
+        var text = playerTimers.TryGetValue(slot, out var t) ? t.ReplayHUDString ?? "" : "";
+        var bar = text.LastIndexOf('|');
+        return bar < 0 ? ("", text.Trim()) : (text[..bar].Trim(), text[(bar + 1)..].Trim());
+    }
+
+    internal string HudReplayTime(int slot) => HudReplayHolder(slot).Time;
+
+    internal PlayerRecord? HudServerRecord(CCSPlayerController player)
+    {
+        if (!playerTimers.TryGetValue(player.Slot, out var t)) return null;
+        var records = t.Mode switch
+        {
+            "85t" => SortedCached85tRecords,
+            "102t" => SortedCached102tRecords,
+            "128t" => SortedCached128tRecords,
+            "Source" => SortedCachedSourceRecords,
+            "Bhop" => SortedCachedBhopRecords,
+            "Custom" => SortedCachedCustomRecords,
+            _ => SortedCachedStandardRecords,
+        };
+        if (records == null || records.Count == 0) return null;
+        var first = records.First().Value;
+        return first.TimerTicks > 0 ? first : null;
+    }
+
+    /// <summary>The world record from the global API cache. This fork forces the API key blank, so this is null
+    /// until a key exists.</summary>
+    internal (string Time, string Name)? HudWorldRecord(string mode)
+    {
+        if (string.IsNullOrEmpty(apiKey)) return null;
+        var cache = mode switch
+        {
+            "85t" => recordCache.Cached85tWorldRecords,
+            "102t" => recordCache.Cached102tWorldRecords,
+            "128t" => recordCache.Cached128tWorldRecords,
+            "Source" => recordCache.CachedSourceWorldRecords,
+            "Bhop" => recordCache.CachedBhopWorldRecords,
+            _ => recordCache.CachedStandardWorldRecords,
+        };
+        var wr = cache?.Values.FirstOrDefault();
+        return wr == null ? null : (Utils.FormatDecimalTime(wr.time), wr.player_name);
+    }
+
+    internal string HudDefaultModeName => GetModeName(defaultMode);
+
+    /// <summary>"surf_kitsune · T1 · Staged".</summary>
+    internal string HudMapLine()
+    {
+        var parts = new List<string> { currentMapName ?? Server.MapName };
+        if (MapTierHudEnabled && currentMapTier != null) parts.Add($"T{currentMapTier}");
+        if (MapTypeHudEnabled && !string.IsNullOrEmpty(currentMapType)) parts.Add(currentMapType);
+        return string.Join(" · ", parts);
+    }
+
+    /// <summary>Stage or checkpoint progress: the label, how many, the 0-based segment the runner is on, and the
+    /// number the card shows.</summary>
+    internal (string? Kind, int Count, int Current, int Shown) HudProgress(PlayerTimerInfo t)
+    {
+        if (useStageTriggers && stageTriggerCount > 0)
+            return ("STAGE", stageTriggerCount, Math.Max(0, t.CurrentMapStage - 1), Math.Max(1, t.CurrentMapStage));
+        if (useCheckpointTriggers && cpTriggerCount > 0)
+            return ("CP", cpTriggerCount, t.CurrentMapCheckpoint, t.CurrentMapCheckpoint);
+        return (null, 0, 0, 0);
+    }
+
+    /// <summary>The rank name, its colour class and its icon class (null when the icon is not in the addon).</summary>
+    internal (string Name, string Color, string? Icon) HudRank(PlayerTimerInfo t)
+    {
+        var title = t.CachedRank ?? "";
+        if (title.Length == 0) return ("", "rc-default", null);
+
+        var color = UnrankedColor;
+        if (!title.Contains(UnrankedTitle))
+        {
+            var rank = rankDataList.FirstOrDefault(r => !string.IsNullOrEmpty(r.Title) && title.Contains(r.Title));
+            if (rank != null) color = rank.Color;
+        }
+
+        return (HudLayout.RankName(title), HudLayout.RankColorClass(color), HudLayout.RankIconClass(t.RankHUDIcon));
+    }
+}

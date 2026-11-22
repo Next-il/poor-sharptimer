@@ -128,7 +128,7 @@
   "ad_goto": "Type {primary}!goto <name>{default} to teleport to a player!",
   "ad_fov": "Type {primary}!fov <0-140>{default} to change your field of view!",
   "ad_sounds": "Type {primary}!sounds{default} to toggle timer sounds!",
-  "ad_hud": "Type {primary}!hud{default} to toggle timer hud!",
+  "ad_hud": "Type {primary}!hud{default} to move or resize the timer hud!",
   "ad_keys": "Type {primary}!keys{default} to toggle hud keys!",
   "ad_styles": "Type {primary}!styles{default} to list all available styles!",
 
@@ -165,7 +165,7 @@
   "console_goto": "• !goto <name> (css_goto) - Teleports you to a player",
   "console_stage": "• !stage <#> (css_stage) - Teleports you to a stage",
   "console_sounds": "• !sounds (css_sounds) - Toggle timer sounds!",
-  "console_hud": "• !hud (css_hud) - Toggle timer hud!",
+  "console_hud": "• !hud (css_hud) - Where the timer HUD goes; !hud on / !hud off to toggle it",
   "console_keys": "• !keys (css_keys) - Toggle hud keys!",
   "console_fov": "• !fov <0-140> (css_fov) - Change your field of view!",
   "console_saveloc": "• !saveloc (css_saveloc) - Saves a Loc",
