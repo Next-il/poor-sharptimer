@@ -1,0 +1,356 @@
+/*
+    sharptimer_menu - !hud, where each part of the timer HUD goes. Include hud_shared first.
+
+    The shell (hud-root / hud-card / hud-head / hud-exit / hud-foot) is hud_shared's, the same as /rank
+    and /music, with the timer's ice blue as the accent. Tabs pick the part; a mini map of the screen
+    shows where every part sits, with CS2's own HUD in grey, and nine spots on it to click. Sizes and
+    the on/off switches sit on the right. Fill-only tiles, no borders around cards.
+
+    The mini map positions are generated at the bottom by hud/tools/gen_layouts.py from the same table
+    as the HUD's own positions, scaled to the map.
+*/
+
+.sm-root { width: 780px; }
+.sm-root.hud-card { border-left-color: #62c4ff; }
+.sm-root .hud-title { width: fit-children; letter-spacing: 1.8px; font-size: 19px; }
+.sm-tag { margin-left: 12px; }
+
+.fill { width: fill-parent-flow(1.0); height: 1px; }
+
+/* ------------------------------------------------------------------ tabs */
+
+.sm-tabs {
+    flow-children: right;
+    width: 100%;
+    height: 40px;
+    border-bottom: 1px solid #ffffff0f;
+    overflow: noclip;
+}
+.sm-tab {
+    width: 160px;
+    height: 100%;
+    transition-property: background-color;
+    transition-duration: 0.12s;
+}
+.sm-tab:hover { background-color: #ffffff0a; }
+.sm-tab-lbl {
+    width: 100%;
+    font-family: Stratum2 Medium Condensed;
+    font-size: 14px;
+    color: #8a929b;
+    text-transform: uppercase;
+    text-align: center;
+    vertical-align: center;
+}
+.sm-tab.active .sm-tab-lbl { color: #ffffff; }
+.sm-bar {
+    width: 160px;
+    height: 2px;
+    vertical-align: bottom;
+    ignore-parent-flow: true;
+    background-color: #62c4ff;
+    transition-property: transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+}
+.sm-bar.at-0 { transform: translateX(0px); }
+.sm-bar.at-1 { transform: translateX(160px); }
+.sm-bar.at-2 { transform: translateX(320px); }
+.sm-bar.at-3 { transform: translateX(480px); }
+
+/* ------------------------------------------------------------------ body */
+
+.sm-body {
+    flow-children: right;
+    width: 100%;
+    height: 330px;
+    padding: 16px 20px 14px 20px;
+}
+.sm-left { flow-children: down; width: 448px; }
+.sm-right { flow-children: down; width: fill-parent-flow(1.0); margin-left: 22px; }
+
+.sm-lhead { flow-children: right; width: 100%; margin-bottom: 7px; }
+.sm-k {
+    font-family: Stratum2 Mono;
+    font-size: 9.5px;
+    color: #8b939c;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+}
+.sm-where {
+    font-family: Stratum2 Mono;
+    font-size: 9.5px;
+    color: #62c4ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* the screen, 16:9 */
+.mm { width: 448px; height: 252px; background-color: #ffffff0a; overflow: clip; }
+
+/* CS2's own HUD, faint: what every spot stays clear of */
+.mm-cs { background-color: #ffffff12; }
+.mm-radar { width: 64px; height: 64px; margin: 3px 0px 0px 3px; }
+.mm-money { width: 24px; height: 7px; margin: 69px 0px 0px 5px; }
+.mm-score { width: 93px; height: 11px; horizontal-align: center; margin-top: 2px; }
+.mm-kill { width: 70px; height: 14px; horizontal-align: right; margin: 17px 4px 0px 0px; }
+.mm-chat { width: 135px; height: 70px; vertical-align: bottom; margin: 0px 0px 30px 5px; background-color: #ffffff0a; }
+.mm-hp { width: 65px; height: 12px; vertical-align: bottom; margin: 0px 0px 4px 5px; }
+.mm-ammo { width: 42px; height: 12px; horizontal-align: right; vertical-align: bottom; margin: 0px 6px 4px 0px; }
+.mm-x { width: 4px; height: 4px; horizontal-align: center; vertical-align: center; background-color: #4ef05a99; }
+
+/* where each part sits; the part the tab is on is blue */
+.mm-blk {
+    background-color: #ffffff38;
+    transition-property: opacity, background-color;
+    transition-duration: 0.2s;
+}
+.mm-blk.sel { background-color: #62c4ffd9; }
+.mm-blk.off { opacity: 0.18; }
+.mm-blk-l {
+    horizontal-align: center;
+    vertical-align: center;
+    font-family: Stratum2 Mono;
+    font-weight: bold;
+    font-size: 7px;
+    letter-spacing: 0.6px;
+    color: #0b0f14cc;
+}
+.mm-ts .mm-blk-l { font-size: 6px; }
+
+/* the nine spots: an outline on hover, a filled corner on the one in use */
+.mm-z { width: 86px; height: 36px; }
+.mm-z-in {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #ffffff00;
+    transition-property: background-color;
+    transition-duration: 0.12s;
+}
+.mm-z:hover .mm-z-in { border: 1px solid #62c4ffcc; background-color: #62c4ff14; }
+.mm-z.cur .mm-z-in { border: 1px solid #62c4ff66; }
+
+.sm-with { flow-children: right; width: 100%; margin-top: 9px; }
+.sm-with-btn.hidden { visibility: collapse; }
+.sm-hint {
+    vertical-align: center;
+    margin-left: 10px;
+    font-family: Stratum2 Regular;
+    font-size: 11px;
+    color: #5c646d;
+}
+
+/* ------------------------------------------------------------------ options (the /rank settings rows) */
+
+.sm-page { flow-children: down; width: 100%; visibility: collapse; }
+.sm-page.active { visibility: visible; }
+
+.se-row { flow-children: down; width: 100%; margin-bottom: 14px; }
+.se-k {
+    font-family: Stratum2 Medium Condensed;
+    font-size: 15px;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.se-d { width: 100%; font-family: Stratum2 Regular; font-size: 12px; color: #8b939c; margin-top: 1px; white-space: normal; }
+.se-opts { flow-children: right; width: fit-children; margin-top: 7px; }
+
+.se-opt {
+    width: fit-children;
+    height: 30px;
+    padding: 0px 14px 0px 14px;
+    margin-right: 4px;
+    background-color: #ffffff0a;
+    transition-property: background-color;
+    transition-duration: 0.12s;
+}
+.se-opt:hover { background-color: #ffffff16; }
+.se-opt-lbl {
+    width: fit-children;
+    font-family: Stratum2 Medium Condensed;
+    font-size: 13px;
+    color: #aab1b9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    vertical-align: center;
+}
+.se-opt:hover .se-opt-lbl { color: #ffffff; }
+.se-opt.on { background-color: #62c4ff29; border-bottom: 2px solid #62c4ff; }
+.se-opt.on .se-opt-lbl { color: #62c4ff; }
+
+/* ------------------------------------------------------------------ footer */
+
+.sm-foot { height: fit-children; }
+.sm-reset {
+    width: fit-children;
+    height: 26px;
+    padding: 0px 12px 0px 12px;
+    background-color: #ffffff0a;
+    transition-property: background-color;
+    transition-duration: 0.12s;
+}
+.sm-reset:hover { background-color: #f2645033; }
+.sm-reset-lbl {
+    vertical-align: center;
+    font-family: Stratum2 Medium Condensed;
+    font-size: 12px;
+    color: #aab1b9;
+    letter-spacing: 1px;
+}
+.sm-cmd {
+    vertical-align: center;
+    margin-left: 14px;
+    padding: 2px 5px 2px 5px;
+    background-color: #ffffff0d;
+    font-family: Stratum2 Mono;
+    font-size: 10px;
+    color: #d7dce1;
+}
+.sm-foot-t {
+    vertical-align: center;
+    margin-left: 6px;
+    font-family: Stratum2 Mono;
+    font-size: 9.5px;
+    color: #5c646d;
+    letter-spacing: 1px;
+}
+
+/* ===== GENERATED below by hud/tools/gen_layouts.py - edit the script, not this block ===== */
+
+/* mini map: the screen at 448x252, k = 0.2333 */
+.mm-blk.p-tl, .mm-z.z-tl { horizontal-align: left; vertical-align: top; margin-left: 4.2px; margin-top: 82.1px; }   /* Top left */
+.mm-blk.p-tc, .mm-z.z-tc { horizontal-align: center; vertical-align: top; margin-top: 18.7px; }   /* Top center */
+.mm-blk.p-tr, .mm-z.z-tr { horizontal-align: right; vertical-align: top; margin-right: 3.7px; margin-top: 36.9px; }   /* Top right */
+.mm-blk.p-ml, .mm-z.z-ml { horizontal-align: left; vertical-align: center; margin-left: 88.7px; transform: translate3d(0px, -7px, 0px); }   /* Middle left */
+.mm-blk.p-xa, .mm-z.z-xa { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; }   /* Above the crosshair */
+.mm-blk.p-xu, .mm-z.z-xu { horizontal-align: center; vertical-align: top; margin-top: 136.7px; }   /* Under the crosshair */
+.mm-blk.p-mr, .mm-z.z-mr { horizontal-align: right; vertical-align: center; margin-right: 88.7px; transform: translate3d(0px, -7px, 0px); }   /* Middle right */
+.mm-blk.p-bc, .mm-z.z-bc { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; }   /* Bottom center */
+.mm-blk.p-br, .mm-z.z-br { horizontal-align: right; vertical-align: bottom; margin-right: 3.7px; margin-bottom: 22.4px; }   /* Bottom right */
+
+/* block sizes */
+.mm-card.sz-s { width: 73.8px; height: 21.8px; }
+.mm-card.sz-m { width: 86.8px; height: 25.7px; }
+.mm-card.sz-l { width: 99.8px; height: 29.5px; }
+.mm-cl.sz-s { width: 34.5px; height: 32.7px; }
+.mm-cl.sz-m { width: 40.6px; height: 38.5px; }
+.mm-cl.sz-l { width: 46.7px; height: 44.3px; }
+.mm-ts.sz-s { width: 79.3px; height: 8px; }
+.mm-ts.sz-m { width: 93.3px; height: 9.3px; }
+.mm-ts.sz-l { width: 107.3px; height: 10.7px; }
+.mm-fd.sz-s { width: 79.3px; height: 33.7px; }
+.mm-fd.sz-m { width: 93.3px; height: 39.7px; }
+.mm-fd.sz-l { width: 107.3px; height: 45.6px; }
+
+/* speed + keys next to the card */
+.mm-blk.nx-tl-s-s { horizontal-align: left; vertical-align: top; margin-left: 80.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-s-m { horizontal-align: left; vertical-align: top; margin-left: 80.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-s-l { horizontal-align: left; vertical-align: top; margin-left: 80.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-m-s { horizontal-align: left; vertical-align: top; margin-left: 93.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-m-m { horizontal-align: left; vertical-align: top; margin-left: 93.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-m-l { horizontal-align: left; vertical-align: top; margin-left: 93.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-l-s { horizontal-align: left; vertical-align: top; margin-left: 106.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-l-m { horizontal-align: left; vertical-align: top; margin-left: 106.8px; margin-top: 82.1px; }
+.mm-blk.nx-tl-l-l { horizontal-align: left; vertical-align: top; margin-left: 106.8px; margin-top: 82.1px; }
+.mm-blk.nx-tc-s-s { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(56.9px, 0px, 0px); }
+.mm-blk.nx-tc-s-m { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(60px, 0px, 0px); }
+.mm-blk.nx-tc-s-l { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(63px, 0px, 0px); }
+.mm-blk.nx-tc-m-s { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(63.5px, 0px, 0px); }
+.mm-blk.nx-tc-m-m { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(66.5px, 0px, 0px); }
+.mm-blk.nx-tc-m-l { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(69.5px, 0px, 0px); }
+.mm-blk.nx-tc-l-s { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(70px, 0px, 0px); }
+.mm-blk.nx-tc-l-m { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(73px, 0px, 0px); }
+.mm-blk.nx-tc-l-l { horizontal-align: center; vertical-align: top; margin-top: 18.7px; transform: translate3d(76.1px, 0px, 0px); }
+.mm-blk.nx-tr-s-s { horizontal-align: right; vertical-align: top; margin-right: 80.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-s-m { horizontal-align: right; vertical-align: top; margin-right: 80.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-s-l { horizontal-align: right; vertical-align: top; margin-right: 80.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-m-s { horizontal-align: right; vertical-align: top; margin-right: 93.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-m-m { horizontal-align: right; vertical-align: top; margin-right: 93.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-m-l { horizontal-align: right; vertical-align: top; margin-right: 93.3px; margin-top: 36.9px; }
+.mm-blk.nx-tr-l-s { horizontal-align: right; vertical-align: top; margin-right: 106.4px; margin-top: 36.9px; }
+.mm-blk.nx-tr-l-m { horizontal-align: right; vertical-align: top; margin-right: 106.4px; margin-top: 36.9px; }
+.mm-blk.nx-tr-l-l { horizontal-align: right; vertical-align: top; margin-right: 106.4px; margin-top: 36.9px; }
+.mm-blk.nx-ml-s-s { horizontal-align: left; vertical-align: center; margin-left: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-s-m { horizontal-align: left; vertical-align: center; margin-left: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-s-l { horizontal-align: left; vertical-align: center; margin-left: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-m-s { horizontal-align: left; vertical-align: center; margin-left: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-m-m { horizontal-align: left; vertical-align: center; margin-left: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-m-l { horizontal-align: left; vertical-align: center; margin-left: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-l-s { horizontal-align: left; vertical-align: center; margin-left: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-l-m { horizontal-align: left; vertical-align: center; margin-left: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-ml-l-l { horizontal-align: left; vertical-align: center; margin-left: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-xa-s-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(56.9px, 0px, 0px); }
+.mm-blk.nx-xa-s-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(60px, 0px, 0px); }
+.mm-blk.nx-xa-s-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(63px, 0px, 0px); }
+.mm-blk.nx-xa-m-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(63.5px, 0px, 0px); }
+.mm-blk.nx-xa-m-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(66.5px, 0px, 0px); }
+.mm-blk.nx-xa-m-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(69.5px, 0px, 0px); }
+.mm-blk.nx-xa-l-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(70px, 0px, 0px); }
+.mm-blk.nx-xa-l-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(73px, 0px, 0px); }
+.mm-blk.nx-xa-l-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 136.7px; transform: translate3d(76.1px, 0px, 0px); }
+.mm-blk.nx-xu-s-s { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(56.9px, 0px, 0px); }
+.mm-blk.nx-xu-s-m { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(60px, 0px, 0px); }
+.mm-blk.nx-xu-s-l { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(63px, 0px, 0px); }
+.mm-blk.nx-xu-m-s { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(63.5px, 0px, 0px); }
+.mm-blk.nx-xu-m-m { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(66.5px, 0px, 0px); }
+.mm-blk.nx-xu-m-l { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(69.5px, 0px, 0px); }
+.mm-blk.nx-xu-l-s { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(70px, 0px, 0px); }
+.mm-blk.nx-xu-l-m { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(73px, 0px, 0px); }
+.mm-blk.nx-xu-l-l { horizontal-align: center; vertical-align: top; margin-top: 136.7px; transform: translate3d(76.1px, 0px, 0px); }
+.mm-blk.nx-mr-s-s { horizontal-align: right; vertical-align: center; margin-right: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-s-m { horizontal-align: right; vertical-align: center; margin-right: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-s-l { horizontal-align: right; vertical-align: center; margin-right: 165.2px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-m-s { horizontal-align: right; vertical-align: center; margin-right: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-m-m { horizontal-align: right; vertical-align: center; margin-right: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-m-l { horizontal-align: right; vertical-align: center; margin-right: 178.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-l-s { horizontal-align: right; vertical-align: center; margin-right: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-l-m { horizontal-align: right; vertical-align: center; margin-right: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-mr-l-l { horizontal-align: right; vertical-align: center; margin-right: 191.3px; transform: translate3d(0px, -7px, 0px); }
+.mm-blk.nx-bc-s-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(56.9px, 0px, 0px); }
+.mm-blk.nx-bc-s-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(60px, 0px, 0px); }
+.mm-blk.nx-bc-s-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(63px, 0px, 0px); }
+.mm-blk.nx-bc-m-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(63.5px, 0px, 0px); }
+.mm-blk.nx-bc-m-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(66.5px, 0px, 0px); }
+.mm-blk.nx-bc-m-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(69.5px, 0px, 0px); }
+.mm-blk.nx-bc-l-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(70px, 0px, 0px); }
+.mm-blk.nx-bc-l-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(73px, 0px, 0px); }
+.mm-blk.nx-bc-l-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 27.5px; transform: translate3d(76.1px, 0px, 0px); }
+.mm-blk.nx-br-s-s { horizontal-align: right; vertical-align: bottom; margin-right: 80.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-s-m { horizontal-align: right; vertical-align: bottom; margin-right: 80.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-s-l { horizontal-align: right; vertical-align: bottom; margin-right: 80.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-m-s { horizontal-align: right; vertical-align: bottom; margin-right: 93.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-m-m { horizontal-align: right; vertical-align: bottom; margin-right: 93.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-m-l { horizontal-align: right; vertical-align: bottom; margin-right: 93.3px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-l-s { horizontal-align: right; vertical-align: bottom; margin-right: 106.4px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-l-m { horizontal-align: right; vertical-align: bottom; margin-right: 106.4px; margin-bottom: 22.4px; }
+.mm-blk.nx-br-l-l { horizontal-align: right; vertical-align: bottom; margin-right: 106.4px; margin-bottom: 22.4px; }
+
+/* the toast with the card: above it, or under it when the card hangs from the top */
+.mm-blk.wc-tl-s { horizontal-align: left; vertical-align: top; margin-left: 4.2px; margin-top: 105px; }
+.mm-blk.wc-tl-m { horizontal-align: left; vertical-align: top; margin-left: 4.2px; margin-top: 108.8px; }
+.mm-blk.wc-tl-l { horizontal-align: left; vertical-align: top; margin-left: 4.2px; margin-top: 112.7px; }
+.mm-blk.wc-tc-s { horizontal-align: center; vertical-align: top; margin-top: 41.5px; }
+.mm-blk.wc-tc-m { horizontal-align: center; vertical-align: top; margin-top: 45.3px; }
+.mm-blk.wc-tc-l { horizontal-align: center; vertical-align: top; margin-top: 49.2px; }
+.mm-blk.wc-tr-s { horizontal-align: right; vertical-align: top; margin-right: 3.7px; margin-top: 59.7px; }
+.mm-blk.wc-tr-m { horizontal-align: right; vertical-align: top; margin-right: 3.7px; margin-top: 63.5px; }
+.mm-blk.wc-tr-l { horizontal-align: right; vertical-align: top; margin-right: 3.7px; margin-top: 67.4px; }
+.mm-blk.wc-ml-s { horizontal-align: left; vertical-align: center; margin-left: 88.7px; transform: translate3d(0px, -23.6px, 0px); }
+.mm-blk.wc-ml-m { horizontal-align: left; vertical-align: center; margin-left: 88.7px; transform: translate3d(0px, -25.5px, 0px); }
+.mm-blk.wc-ml-l { horizontal-align: left; vertical-align: center; margin-left: 88.7px; transform: translate3d(0px, -27.4px, 0px); }
+.mm-blk.wc-xa-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 159.6px; }
+.mm-blk.wc-xa-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 163.4px; }
+.mm-blk.wc-xa-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 167.2px; }
+.mm-blk.wc-xu-s { horizontal-align: center; vertical-align: top; margin-top: 159.6px; }
+.mm-blk.wc-xu-m { horizontal-align: center; vertical-align: top; margin-top: 163.4px; }
+.mm-blk.wc-xu-l { horizontal-align: center; vertical-align: top; margin-top: 167.2px; }
+.mm-blk.wc-mr-s { horizontal-align: right; vertical-align: center; margin-right: 88.7px; transform: translate3d(0px, -23.6px, 0px); }
+.mm-blk.wc-mr-m { horizontal-align: right; vertical-align: center; margin-right: 88.7px; transform: translate3d(0px, -25.5px, 0px); }
+.mm-blk.wc-mr-l { horizontal-align: right; vertical-align: center; margin-right: 88.7px; transform: translate3d(0px, -27.4px, 0px); }
+.mm-blk.wc-bc-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 50.4px; }
+.mm-blk.wc-bc-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 54.2px; }
+.mm-blk.wc-bc-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 58px; }
+.mm-blk.wc-br-s { horizontal-align: right; vertical-align: bottom; margin-right: 3.7px; margin-bottom: 45.2px; }
+.mm-blk.wc-br-m { horizontal-align: right; vertical-align: bottom; margin-right: 3.7px; margin-bottom: 49.1px; }
+.mm-blk.wc-br-l { horizontal-align: right; vertical-align: bottom; margin-right: 3.7px; margin-bottom: 52.9px; }
