@@ -219,7 +219,7 @@
     padding: 8px 14px 10px 14px;
     border-top: 2px solid #62c4ff;
     world-blur: gaussian(8.0);
-    background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171ee6), to(#0b0f14ee));
+    background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171ec6), to(#0b0f14d0));
     opacity: 0;
     blur: gaussian(7.0);
     transform: translateY(40px);
@@ -519,7 +519,7 @@
 
 .ts-mb { vertical-align: center; margin-left: 10px; font-family: Stratum2 Medium Condensed; font-weight: bold; font-size: 15px; color: #62c4ff; white-space: nowrap; }
 .ts-m { vertical-align: center; margin-left: 6px; font-family: Stratum2 Medium Condensed; font-size: 15px; color: #ffffff; white-space: nowrap; }
-.ts.err { background-color: #2a0f0cd6; }
+.ts.err { background-color: #2a0f0ccc; }
 .ts.err .ts-k { color: #f26450; }
 .ts.err .ts-mb { color: #f26450; }
 .ts.err .ts-m { color: #ffb4a8; }
