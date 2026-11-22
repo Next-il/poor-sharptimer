@@ -7,7 +7,8 @@
   // sharptimer_hud / sharptimer_menu); the center HTML stays for any player the panel cannot reach.
   "Enabled": true,
 
-  // Updates per second. Speed is only sent when the number changed; keys whenever a key changes.
+  // Updates per second. Speed is only sent when the number changed; keys whenever a key changes. TimerRate is
+  // the running clock on 1 decimal; on 2 or 3 it goes out every tick (that label only, when its text changed).
   "TimerRate": 10,
   "SpeedRate": 16,
   "SyncRate": 4,
@@ -72,6 +73,7 @@
     "Accent": "ice",               // ice, orange, pink, lime, white
     "CompactCard": false,
     "Opacity": "md",               // lo (light), md, hi (solid)
-    "TextSize": "m"
+    "TextSize": "m",
+    "TimerDecimals": 3             // the running clock: 1, 2 or 3 digits after the second
   }
 }

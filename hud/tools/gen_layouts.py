@@ -360,7 +360,8 @@ def menu_xml():
                 opt_row("TIMER CARD", "Compact drops the map name and shrinks the clock.", [("ss_cc_full", "FULL"), ("ss_cc_compact", "COMPACT")])
                 + opt_row("TEXT SIZE", "On top of each part's size.", [("ss_tx_s", "S"), ("ss_tx_m", "M"), ("ss_tx_l", "L")]))
     style_r = P(cls="st-col st-col1", children=
-                opt_row("BACKGROUND", "How much of the game shows through.", [(f"ss_op_{k}", n) for k, n in OPACITY_NAMES]))
+                opt_row("BACKGROUND", "How much of the game shows through.", [(f"ss_op_{k}", n) for k, n in OPACITY_NAMES])
+                + opt_row("TIMER DECIMALS", "Digits after the second while the clock runs.", [("ss_td_1", "1"), ("ss_td_2", "2"), ("ss_td_3", "3")]))
     page_style = P("mp_2", "sm-page pg-reset", accent + P(cls="st-cols", children=style_l + style_r)
                    + L("Changes show on the HUD behind this menu.", "rs-note st-note"))
 
@@ -423,7 +424,7 @@ def menu_xml():
 		  mz_with                    next to the card (speed) / with the card (splits)
 		  ms_s ms_m ms_l             size        mo_kl_grid mo_kl_row   keys layout
 		  vo_<k>_on vo_<k>_off       show / hide, k = {show_ids}
-		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l
+		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l ss_td_1|2|3
 		  ch_spl_off|hud|chat ch_keys_on|off ch_ss_on|off ch_fin_on|off
 		  rs_layout rs_all
 

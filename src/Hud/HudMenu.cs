@@ -11,7 +11,7 @@ namespace SharpTimer.Hud;
 /// records feed), click a spot; S / M / L per part; next to the card (speed) and with the card (splits).</item>
 /// <item>Show / Hide: the timer HUD (!hud on|off), the card, PB and SR, rank, the split toast (!splits), speed,
 /// the speed bar, sync, keys (!keys) and the records feed.</item>
-/// <item>Style: accent, full or compact card, background, text size.</item>
+/// <item>Style: accent, full or compact card, background, text size, timer decimals.</item>
 /// <item>Chat: splits (off / HUD / HUD + chat), keys, start speed in chat, finish messages in chat.</item>
 /// <item>Reset: the layout, or everything.</item>
 /// </list>
@@ -250,6 +250,7 @@ internal sealed class HudMenu : IDisposable
         w.Cls(panel, player, "ss_cc_compact", "on", p.Compact);
         foreach (var o in HudLayout.Opacities) w.Cls(panel, player, "ss_op_" + o, "on", p.Opacity == o);
         foreach (var s in HudLayout.Sizes) w.Cls(panel, player, "ss_tx_" + s, "on", p.Text == s);
+        for (var d = 1; d <= 3; d++) w.Cls(panel, player, $"ss_td_{d}", "on", p.Decimals == d);
     }
 
     private void DrawChat(CCSPlayerController player, Viewer v, HudPrefs p, bool keysOff, bool splitsOff)
@@ -369,6 +370,7 @@ internal sealed class HudMenu : IDisposable
             else if (id == "ss_cc_compact") Change(player, p => p.Compact = true);
             else if (id.StartsWith("ss_op_") && HudLayout.IsOpacity(value)) Change(player, p => p.Opacity = value);
             else if (id.StartsWith("ss_tx_") && HudLayout.IsSize(value)) Change(player, p => p.Text = value);
+            else if (id.StartsWith("ss_td_") && HudLayout.IsDecimals(value)) Change(player, p => p.Decimals = value[0] - '0');
             else return;
             Draw(player, v);
             return;

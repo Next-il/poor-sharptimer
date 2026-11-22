@@ -17,7 +17,7 @@ namespace SharpTimer.Hud;
 /// cl cls (speed: spot or nx, size; "cl" is the old speed + keys cluster, so a saved cluster spot is now the speed
 /// spot), ky kys (keys), kr (keys in one row), ts tss (toast: spot or card, size), fd fds (records feed),
 /// cd sp sb sy pc rk fo (card, speed, speed bar, sync, PB and SR, rank, feed: 0 hides), ac (accent), cc
-/// (compact card), op (background lo|md|hi), tx (text size), spc ssc fc (splits, start speed and finish
+/// (compact card), op (background lo|md|hi), tx (text size), td (running clock decimals 1|2|3), spc ssc fc (splits, start speed and finish
 /// messages in chat), hs (has opened the settings once). Unknown keys and bad values are ignored.</para>
 /// </summary>
 public sealed class HudPrefs
@@ -50,6 +50,8 @@ public sealed class HudPrefs
     public bool Compact;
     public string Opacity = "md";
     public string Text = "m";
+    /// <summary>Digits after the second on the running clock, 1 to 3.</summary>
+    public int Decimals = 3;
 
     // ---- chat
     public bool SplitsChat;
@@ -87,6 +89,7 @@ public sealed class HudPrefs
         p.Compact = d.CompactCard;
         p.Apply("op", d.Opacity);
         p.Apply("tx", d.TextSize);
+        p.Apply("td", d.TimerDecimals.ToString());
         p.SplitsChat = config.SplitsInChat;
         p.SpeedChat = config.StartSpeedInChat;
         p.FinishChat = config.RecordsInChat;
@@ -131,6 +134,7 @@ public sealed class HudPrefs
         Add("cc", B(Compact), B(d.Compact));
         Add("op", Opacity, d.Opacity);
         Add("tx", Text, d.Text);
+        Add("td", Decimals.ToString(), d.Decimals.ToString());
         Add("spc", B(SplitsChat), B(d.SplitsChat));
         Add("ssc", B(SpeedChat), B(d.SpeedChat));
         Add("fc", B(FinishChat), B(d.FinishChat));
@@ -183,6 +187,7 @@ public sealed class HudPrefs
             case "cc": Compact = v == "1"; break;
             case "op": if (HudLayout.IsOpacity(v)) Opacity = v; break;
             case "tx": if (HudLayout.IsSize(v)) Text = v; break;
+            case "td": if (HudLayout.IsDecimals(v)) Decimals = v[0] - '0'; break;
             case "spc": SplitsChat = v == "1"; break;
             case "ssc": SpeedChat = v == "1"; break;
             case "fc": FinishChat = v == "1"; break;

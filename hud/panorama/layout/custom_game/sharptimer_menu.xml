@@ -19,7 +19,7 @@
 		  mz_with                    next to the card (speed) / with the card (splits)
 		  ms_s ms_m ms_l             size        mo_kl_grid mo_kl_row   keys layout
 		  vo_<k>_on vo_<k>_off       show / hide, k = hud card cmp rank toast speed bar sync keys feed
-		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l
+		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l ss_td_1|2|3
 		  ch_spl_off|hud|chat ch_keys_on|off ch_ss_on|off ch_fin_on|off
 		  rs_layout rs_all
 
@@ -395,6 +395,21 @@
 									</Button>
 									<Button id="ss_op_hi" class="se-opt">
 										<Label class="se-opt-lbl" text="SOLID" hittest="false" />
+									</Button>
+								</Panel>
+							</Panel>
+							<Panel class="se-row" hittest="false">
+								<Label class="se-k" text="TIMER DECIMALS" hittest="false" />
+								<Label class="se-d" text="Digits after the second while the clock runs." hittest="false" />
+								<Panel class="se-opts" hittest="false">
+									<Button id="ss_td_1" class="se-opt">
+										<Label class="se-opt-lbl" text="1" hittest="false" />
+									</Button>
+									<Button id="ss_td_2" class="se-opt">
+										<Label class="se-opt-lbl" text="2" hittest="false" />
+									</Button>
+									<Button id="ss_td_3" class="se-opt">
+										<Label class="se-opt-lbl" text="3" hittest="false" />
 									</Button>
 								</Panel>
 							</Panel>

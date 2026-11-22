@@ -19,6 +19,8 @@ public sealed class HudConfig
     public bool Enabled { get; set; } = true;
 
     // ------------------------------------------------------------------ update rates (per second)
+    /// <summary>The running clock for players on 1 decimal. On 2 or 3 decimals it is written every tick (only that
+    /// label, only when its text changed).</summary>
     public int TimerRate { get; set; } = 10;
     public int SpeedRate { get; set; } = 16;
     public int SyncRate { get; set; } = 4;
@@ -154,4 +156,6 @@ public sealed class HudDefaults
     public string Opacity { get; set; } = "md";
     /// <summary>s, m or l, on top of each part's size.</summary>
     public string TextSize { get; set; } = "m";
+    /// <summary>Digits after the second on the running clock: 1, 2 or 3 (m:ss.fff, SharpTimer's own format).</summary>
+    public int TimerDecimals { get; set; } = 3;
 }

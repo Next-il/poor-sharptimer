@@ -112,11 +112,12 @@ internal static class HudLayout
 
     // ------------------------------------------------------------------ SharpTimer's own time formats
 
-    /// <summary>"1:24.218" (or "1:02:03.500"), like Utils.FormatTime.</summary>
+    /// <summary>"1:24.218" (or "1:02:03.500"), exactly like Utils.FormatTime: its "000" format rounds a half
+    /// (62.5 ms at tick 4) away from zero, so this does too.</summary>
     public static string Time(int ticks)
     {
         ticks = Math.Max(0, ticks);
-        var ms = (int)Math.Round((ticks % 64) * (1000.0 / 64.0));
+        var ms = (int)Math.Round((ticks % 64) * (1000.0 / 64.0), MidpointRounding.AwayFromZero);
         var totalSeconds = ticks / 64;
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
@@ -126,17 +127,28 @@ internal static class HudLayout
             : $"{minutes}:{seconds:D2}.{ms:D3}";
     }
 
-    /// <summary>"1:24.2": tenths, for the running clock.</summary>
-    public static string TimeTenths(int ticks)
+    /// <summary>The running clock with the player's decimals: 3 is <see cref="Time"/> (1:24.218, what the finish
+    /// shows), 2 and 1 cut the time down (1:24.21, 1:24.2) so the clock never runs ahead of the real time.
+    /// 64 tick is 15.625 ms a tick, so a 4th digit would be made up.</summary>
+    public static string TimeRunning(int ticks, int decimals)
     {
+        if (decimals >= 3) return Time(ticks);
         ticks = Math.Max(0, ticks);
-        var tenths = (int)(ticks / 6.4);
-        var minutes = tenths / 600;
-        var seconds = tenths / 10 % 60;
+        var units = decimals <= 1 ? 10 : 100;
+        var steps = (long)ticks * units / 64;
+        var totalSeconds = steps / units;
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        var frac = (steps % units).ToString(decimals <= 1 ? "D1" : "D2");
         return minutes >= 60
-            ? $"{minutes / 60}:{minutes % 60:D2}:{seconds:D2}.{tenths % 10}"
-            : $"{minutes}:{seconds:D2}.{tenths % 10}";
+            ? $"{minutes / 60}:{minutes % 60:D2}:{seconds:D2}.{frac}"
+            : $"{minutes}:{seconds:D2}.{frac}";
     }
+
+    /// <summary>"0:00.000" with the player's decimals, for the card before a run.</summary>
+    public static string TimeZero(int decimals) => "0:00." + new string('0', Math.Clamp(decimals, 1, 3));
+
+    public static bool IsDecimals(string? v) => v is "1" or "2" or "3";
 
     /// <summary>"-1.204" under a minute, "+1:02.500" over, from current minus reference.</summary>
     public static string Diff(int currentTicks, int referenceTicks)

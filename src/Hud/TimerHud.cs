@@ -590,10 +590,13 @@ internal sealed class TimerHud : IDisposable
         var replay = t.IsReplaying;
         var running = t.IsTimerRunning || t.IsBonusTimerRunning;
 
-        if ((running || replay) && Due(ref v.TimerSlot, tick, Cfg.TimerRate))
+        // 2 or 3 decimals: every tick, so the digits count instead of jumping. Only this label goes out that often,
+        // and only when its text changed. 1 decimal: the configured rate (10 a second) is enough.
+        var decimals = v.Prefs.Decimals;
+        if ((running || replay) && Due(ref v.TimerSlot, tick, decimals >= 2 ? 64 : Cfg.TimerRate))
         {
             var ticks = replay ? _st.HudReplayFrame(runner.Slot) : t.IsBonusTimerRunning ? t.BonusTimerTicks : t.TimerTicks;
-            v.W.Var(_panel!, viewer, "tc_time", HudLayout.TimeTenths(ticks));
+            v.W.Var(_panel!, viewer, "tc_time", HudLayout.TimeRunning(ticks, decimals));
         }
 
         if (running && Cfg.LivePlace && !t.IsBonusTimerRunning && Due(ref v.PlaceSlot, tick, Cfg.PlaceRate))
@@ -804,7 +807,7 @@ internal sealed class TimerHud : IDisposable
         if (!running && !replay)
             w.Var(panel, viewer, "tc_time", result is ResultKind.Done or ResultKind.Pb or ResultKind.Sr or ResultKind.Cancel
                 ? HudLayout.Time(r.FinalTicks)
-                : "0:00.0");
+                : HudLayout.TimeZero(v.Prefs.Decimals));
         if (result != ResultKind.None)
         {
             w.Var(panel, viewer, "tc_diff", r.DiffText);
