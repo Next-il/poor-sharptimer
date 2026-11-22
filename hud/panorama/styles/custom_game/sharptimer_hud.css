@@ -1,22 +1,25 @@
 /*
     sharptimer_hud - the timer HUD. Include hud_shared first.
 
-    Ported from the approved review page (HudMenu/previews/timer, the "New" design): a speed + keys
-    cluster, the timer card with its 16-segment split bar and the replay progress clip, one toast slot
+    Ported from the approved review page (HudMenu/previews/timer, the "New" design): the speed readout,
+    the keys, the timer card with its 16-segment split bar and the replay progress clip, one toast slot
     for splits and command replies, and a feed of other players' records. Sizes are 1080p pixels at
     size M, the same numbers as the review page.
 
-    PLACEMENT. Each group is three panels: st-pos (where it sits: a p-* class, or nx-* for speed + keys
-    next to the card), st-sz (size: ui-scale) and the group itself, which carries "show" and slides in.
-    The positions and every other ladder are generated at the bottom of this file by
-    hud/tools/gen_layouts.py.
+    PLACEMENT. Each part is three panels: st-pos (where it sits: a p-* class, or nx-* for the speed
+    next to the card), st-sz (size: ui-scale) and the part itself, which carries "show" and slides in.
+    Speed and keys are two parts (owner, 11-23); keys default to the right side above the weapon list.
+
+    STYLE. Every part sits inside st-skin, which carries the player's accent (ac-*), background (op-*),
+    text size (tx-*) and the compact card (cc). The positions, those ladders and every other one are
+    generated at the bottom of this file by hud/tools/gen_layouts.py.
 
     UNVERIFIED IN GAME, each with a harmless failure:
       - ui-scale (sz-s / sz-l): if it does nothing, every size draws as M.
       - blur in transition-property: the panels are sharp at once.
       - @keyframes on the time and the toast (the pop): the text just changes.
-    Icons are CS2's own (icons/ui/*, 32x32 SVG) tinted with wash-color; the rank icons are the
-    18x20 PNGs from remote_data/rank_icons, baked into the addon.
+    Icons are CS2's own (icons/ui/*, 32x32 SVG) tinted with wash-color. The rank is its name in the
+    rank's colour; the addon ships no rank images.
 */
 
 .st-screen { overflow: noclip; }
@@ -30,6 +33,12 @@
 }
 .st-root.show { visibility: visible; }
 
+.st-skin {
+    width: 100%;
+    height: 100%;
+    overflow: noclip;
+}
+
 .st-pos, .st-sz {
     width: fit-children;
     height: fit-children;
@@ -41,7 +50,7 @@
 
 .fill { width: fill-parent-flow(1.0); height: 1px; }
 
-/* ================================================================== speed + keys */
+/* ================================================================== speed */
 
 .sc {
     width: 174px;
@@ -64,7 +73,6 @@
     background-color: #0b0f149e;
     overflow: noclip;
 }
-.sc.nospeed .sc-box { visibility: collapse; }
 
 .sc-top { flow-children: right; horizontal-align: center; }
 /* Fixed width, mono digits: a changing number never moves the panel. */
@@ -166,11 +174,19 @@
 .sc.vc .sc-num.v9 { color: #ff0000; }
 .sc.vc .sc-num.v10 { color: #dc143c; }
 
-/* ------------------------------------------------------------------ keys: W / A S D (E) / DUCK JUMP */
+/* ================================================================== keys: W / A S D (E) / DUCK JUMP */
 
-.ks { flow-children: down; horizontal-align: center; margin-top: 7px; }
-.sc.nokeys .ks { visibility: collapse; }
-.sc.nospeed .ks { margin-top: 0px; }
+.ks {
+    flow-children: down;
+    overflow: noclip;
+    opacity: 0;
+    blur: gaussian(6.0);
+    transform: translateY(14px);
+    transition-property: opacity, transform, blur;
+    transition-duration: 0.2s, 0.22s, 0.2s;
+    transition-timing-function: ease-out, cubic-bezier( 0.2, 0.8, 0.25, 1.0 ), ease-out;
+}
+.ks.show { opacity: 1; blur: gaussian(0.0); transform: translateY(0px); }
 .ks-row { flow-children: right; horizontal-align: center; margin-bottom: 4px; }
 .k {
     width: 30px;
@@ -283,6 +299,9 @@
 .chip.c-mode { color: #d7dce1; background-color: #ffffff12; }
 .tc.nostyle .c-style { visibility: collapse; }
 .tc.nomode .c-mode { visibility: collapse; }
+/* "!HUD SETTINGS" in the start zone, until the player has opened the settings once */
+.chip.c-hint { color: #d7dce1; background-color: #ffffff12; visibility: collapse; }
+.tc.hint.st-start .c-hint { visibility: visible; }
 
 .tc-main { flow-children: right; width: 100%; margin-top: 5px; }
 .tc-time {
@@ -361,6 +380,7 @@
 }
 .tc.nopb .cmp-pb { visibility: collapse; }
 .tc.nosr .cmp-sr { visibility: collapse; }
+.tc.nocmp .tc-cmp { visibility: collapse; }
 .tc-ricon {
     width: 18px;
     height: 20px;
@@ -594,7 +614,7 @@
 
 /* ===== GENERATED below by hud/tools/gen_layouts.py - edit the script, not this block ===== */
 
-/* positions: one class per spot, on the group's outer panel */
+/* positions: one class per spot, on the part's outer panel */
 .st-pos.p-tl { horizontal-align: left; vertical-align: top; margin-left: 18px; margin-top: 352px; }   /* Top left */
 .st-pos.p-tc { horizontal-align: center; vertical-align: top; margin-top: 80px; }   /* Top center */
 .st-pos.p-tr { horizontal-align: right; vertical-align: top; margin-right: 16px; margin-top: 158px; }   /* Top right */
@@ -604,8 +624,9 @@
 .st-pos.p-mr { horizontal-align: right; vertical-align: center; margin-right: 380px; transform: translate3d(0px, -30px, 0px); }   /* Middle right */
 .st-pos.p-bc { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; }   /* Bottom center */
 .st-pos.p-br { horizontal-align: right; vertical-align: bottom; margin-right: 16px; margin-bottom: 96px; }   /* Bottom right */
+.st-pos.p-rw { horizontal-align: right; vertical-align: bottom; margin-right: 16px; margin-bottom: 340px; }   /* Right, above the weapons */
 
-/* speed + keys next to the card: nx-<card position>-<card size>-<cluster size> */
+/* speed next to the card: nx-<card position>-<card size>-<speed size>, nxc- next to the compact card */
 .st-pos.nx-tl-s-s { horizontal-align: left; vertical-align: top; margin-left: 346.2px; margin-top: 352px; }
 .st-pos.nx-tl-s-m { horizontal-align: left; vertical-align: top; margin-left: 346.2px; margin-top: 352px; }
 .st-pos.nx-tl-s-l { horizontal-align: left; vertical-align: top; margin-left: 346.2px; margin-top: 352px; }
@@ -687,6 +708,105 @@
 .st-pos.nx-br-l-s { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 96px; }
 .st-pos.nx-br-l-m { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 96px; }
 .st-pos.nx-br-l-l { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 96px; }
+.st-pos.nx-rw-s-s { horizontal-align: right; vertical-align: bottom; margin-right: 344.2px; margin-bottom: 340px; }
+.st-pos.nx-rw-s-m { horizontal-align: right; vertical-align: bottom; margin-right: 344.2px; margin-bottom: 340px; }
+.st-pos.nx-rw-s-l { horizontal-align: right; vertical-align: bottom; margin-right: 344.2px; margin-bottom: 340px; }
+.st-pos.nx-rw-m-s { horizontal-align: right; vertical-align: bottom; margin-right: 400px; margin-bottom: 340px; }
+.st-pos.nx-rw-m-m { horizontal-align: right; vertical-align: bottom; margin-right: 400px; margin-bottom: 340px; }
+.st-pos.nx-rw-m-l { horizontal-align: right; vertical-align: bottom; margin-right: 400px; margin-bottom: 340px; }
+.st-pos.nx-rw-l-s { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 340px; }
+.st-pos.nx-rw-l-m { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 340px; }
+.st-pos.nx-rw-l-l { horizontal-align: right; vertical-align: bottom; margin-right: 455.8px; margin-bottom: 340px; }
+.st-pos.nxc-tl-s-s { horizontal-align: left; vertical-align: top; margin-left: 285px; margin-top: 352px; }
+.st-pos.nxc-tl-s-m { horizontal-align: left; vertical-align: top; margin-left: 285px; margin-top: 352px; }
+.st-pos.nxc-tl-s-l { horizontal-align: left; vertical-align: top; margin-left: 285px; margin-top: 352px; }
+.st-pos.nxc-tl-m-s { horizontal-align: left; vertical-align: top; margin-left: 330px; margin-top: 352px; }
+.st-pos.nxc-tl-m-m { horizontal-align: left; vertical-align: top; margin-left: 330px; margin-top: 352px; }
+.st-pos.nxc-tl-m-l { horizontal-align: left; vertical-align: top; margin-left: 330px; margin-top: 352px; }
+.st-pos.nxc-tl-l-s { horizontal-align: left; vertical-align: top; margin-left: 375px; margin-top: 352px; }
+.st-pos.nxc-tl-l-m { horizontal-align: left; vertical-align: top; margin-left: 375px; margin-top: 352px; }
+.st-pos.nxc-tl-l-l { horizontal-align: left; vertical-align: top; margin-left: 375px; margin-top: 352px; }
+.st-pos.nxc-tc-s-s { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(213.4px, 0px, 0px); }
+.st-pos.nxc-tc-s-m { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(226.5px, 0px, 0px); }
+.st-pos.nxc-tc-s-l { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(239.6px, 0px, 0px); }
+.st-pos.nxc-tc-m-s { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(235.9px, 0px, 0px); }
+.st-pos.nxc-tc-m-m { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(249px, 0px, 0px); }
+.st-pos.nxc-tc-m-l { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(262.1px, 0px, 0px); }
+.st-pos.nxc-tc-l-s { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(258.4px, 0px, 0px); }
+.st-pos.nxc-tc-l-m { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(271.5px, 0px, 0px); }
+.st-pos.nxc-tc-l-l { horizontal-align: center; vertical-align: top; margin-top: 80px; transform: translate3d(284.6px, 0px, 0px); }
+.st-pos.nxc-tr-s-s { horizontal-align: right; vertical-align: top; margin-right: 283px; margin-top: 158px; }
+.st-pos.nxc-tr-s-m { horizontal-align: right; vertical-align: top; margin-right: 283px; margin-top: 158px; }
+.st-pos.nxc-tr-s-l { horizontal-align: right; vertical-align: top; margin-right: 283px; margin-top: 158px; }
+.st-pos.nxc-tr-m-s { horizontal-align: right; vertical-align: top; margin-right: 328px; margin-top: 158px; }
+.st-pos.nxc-tr-m-m { horizontal-align: right; vertical-align: top; margin-right: 328px; margin-top: 158px; }
+.st-pos.nxc-tr-m-l { horizontal-align: right; vertical-align: top; margin-right: 328px; margin-top: 158px; }
+.st-pos.nxc-tr-l-s { horizontal-align: right; vertical-align: top; margin-right: 373px; margin-top: 158px; }
+.st-pos.nxc-tr-l-m { horizontal-align: right; vertical-align: top; margin-right: 373px; margin-top: 158px; }
+.st-pos.nxc-tr-l-l { horizontal-align: right; vertical-align: top; margin-right: 373px; margin-top: 158px; }
+.st-pos.nxc-ml-s-s { horizontal-align: left; vertical-align: center; margin-left: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-s-m { horizontal-align: left; vertical-align: center; margin-left: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-s-l { horizontal-align: left; vertical-align: center; margin-left: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-m-s { horizontal-align: left; vertical-align: center; margin-left: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-m-m { horizontal-align: left; vertical-align: center; margin-left: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-m-l { horizontal-align: left; vertical-align: center; margin-left: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-l-s { horizontal-align: left; vertical-align: center; margin-left: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-l-m { horizontal-align: left; vertical-align: center; margin-left: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-ml-l-l { horizontal-align: left; vertical-align: center; margin-left: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-xa-s-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(213.4px, 0px, 0px); }
+.st-pos.nxc-xa-s-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(226.5px, 0px, 0px); }
+.st-pos.nxc-xa-s-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(239.6px, 0px, 0px); }
+.st-pos.nxc-xa-m-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(235.9px, 0px, 0px); }
+.st-pos.nxc-xa-m-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(249px, 0px, 0px); }
+.st-pos.nxc-xa-m-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(262.1px, 0px, 0px); }
+.st-pos.nxc-xa-l-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(258.4px, 0px, 0px); }
+.st-pos.nxc-xa-l-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(271.5px, 0px, 0px); }
+.st-pos.nxc-xa-l-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 586px; transform: translate3d(284.6px, 0px, 0px); }
+.st-pos.nxc-xu-s-s { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(213.4px, 0px, 0px); }
+.st-pos.nxc-xu-s-m { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(226.5px, 0px, 0px); }
+.st-pos.nxc-xu-s-l { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(239.6px, 0px, 0px); }
+.st-pos.nxc-xu-m-s { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(235.9px, 0px, 0px); }
+.st-pos.nxc-xu-m-m { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(249px, 0px, 0px); }
+.st-pos.nxc-xu-m-l { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(262.1px, 0px, 0px); }
+.st-pos.nxc-xu-l-s { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(258.4px, 0px, 0px); }
+.st-pos.nxc-xu-l-m { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(271.5px, 0px, 0px); }
+.st-pos.nxc-xu-l-l { horizontal-align: center; vertical-align: top; margin-top: 586px; transform: translate3d(284.6px, 0px, 0px); }
+.st-pos.nxc-mr-s-s { horizontal-align: right; vertical-align: center; margin-right: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-s-m { horizontal-align: right; vertical-align: center; margin-right: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-s-l { horizontal-align: right; vertical-align: center; margin-right: 647px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-m-s { horizontal-align: right; vertical-align: center; margin-right: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-m-m { horizontal-align: right; vertical-align: center; margin-right: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-m-l { horizontal-align: right; vertical-align: center; margin-right: 692px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-l-s { horizontal-align: right; vertical-align: center; margin-right: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-l-m { horizontal-align: right; vertical-align: center; margin-right: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-mr-l-l { horizontal-align: right; vertical-align: center; margin-right: 737px; transform: translate3d(0px, -30px, 0px); }
+.st-pos.nxc-bc-s-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(213.4px, 0px, 0px); }
+.st-pos.nxc-bc-s-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(226.5px, 0px, 0px); }
+.st-pos.nxc-bc-s-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(239.6px, 0px, 0px); }
+.st-pos.nxc-bc-m-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(235.9px, 0px, 0px); }
+.st-pos.nxc-bc-m-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(249px, 0px, 0px); }
+.st-pos.nxc-bc-m-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(262.1px, 0px, 0px); }
+.st-pos.nxc-bc-l-s { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(258.4px, 0px, 0px); }
+.st-pos.nxc-bc-l-m { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(271.5px, 0px, 0px); }
+.st-pos.nxc-bc-l-l { horizontal-align: center; vertical-align: bottom; margin-bottom: 118px; transform: translate3d(284.6px, 0px, 0px); }
+.st-pos.nxc-br-s-s { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 96px; }
+.st-pos.nxc-br-s-m { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 96px; }
+.st-pos.nxc-br-s-l { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 96px; }
+.st-pos.nxc-br-m-s { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 96px; }
+.st-pos.nxc-br-m-m { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 96px; }
+.st-pos.nxc-br-m-l { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 96px; }
+.st-pos.nxc-br-l-s { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 96px; }
+.st-pos.nxc-br-l-m { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 96px; }
+.st-pos.nxc-br-l-l { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 96px; }
+.st-pos.nxc-rw-s-s { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 340px; }
+.st-pos.nxc-rw-s-m { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 340px; }
+.st-pos.nxc-rw-s-l { horizontal-align: right; vertical-align: bottom; margin-right: 283px; margin-bottom: 340px; }
+.st-pos.nxc-rw-m-s { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 340px; }
+.st-pos.nxc-rw-m-m { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 340px; }
+.st-pos.nxc-rw-m-l { horizontal-align: right; vertical-align: bottom; margin-right: 328px; margin-bottom: 340px; }
+.st-pos.nxc-rw-l-s { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 340px; }
+.st-pos.nxc-rw-l-m { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 340px; }
+.st-pos.nxc-rw-l-l { horizontal-align: right; vertical-align: bottom; margin-right: 373px; margin-bottom: 340px; }
 
 /* the feed lines up with its edge and slides in from it */
 .st-pos.p-tl .fd-slot { horizontal-align: left; }
@@ -707,6 +827,8 @@
 .st-pos.p-bc .fd-row { transform: translate3d(0px, 30px, 0px); }
 .st-pos.p-br .fd-slot { horizontal-align: right; }
 .st-pos.p-br .fd-row { transform: translate3d(420px, 0px, 0px); }
+.st-pos.p-rw .fd-slot { horizontal-align: right; }
+.st-pos.p-rw .fd-row { transform: translate3d(420px, 0px, 0px); }
 /* after the starts above, and more specific: a shown row is in place */
 .st-pos .fd-slot .fd-row.show { opacity: 1; blur: gaussian(0.0); transform: translate3d(0px, 0px, 0px); }
 
@@ -838,3 +960,190 @@
 .tc-rank.rc-magenta { color: #e05ad1; }
 .tc-rank.rc-lightred { color: #ff7a7a; }
 .tc-rank.rc-orange { color: #f39a3a; }
+
+/* ---- style: accent (ac-*). Only the running and replay card, so result colours stay their own */
+.st-skin.ac-ice .tc.st-run, .st-skin.ac-ice .tc.st-replay { border-top: 2px solid #62c4ff; }
+.st-skin.ac-ice .tc.st-run .tc-ico, .st-skin.ac-ice .tc.st-replay .tc-ico { wash-color: #62c4ff; }
+.st-skin.ac-ice .tc.st-run .tc-lead, .st-skin.ac-ice .tc.st-replay .tc-lead { color: #62c4ff; }
+.st-skin.ac-ice .chip.c-style { color: #62c4ff; background-color: #62c4ff1f; }
+.st-skin.ac-ice .ts-k, .st-skin.ac-ice .ts-mb { color: #62c4ff; }
+.st-skin.ac-ice .sc-chip, .st-skin.ac-ice .sc-cap, .st-skin.ac-ice .tc-pfill { background-color: #62c4ff; }
+.st-skin.ac-orange .tc.st-run, .st-skin.ac-orange .tc.st-replay { border-top: 2px solid #f7783c; }
+.st-skin.ac-orange .tc.st-run .tc-ico, .st-skin.ac-orange .tc.st-replay .tc-ico { wash-color: #f7783c; }
+.st-skin.ac-orange .tc.st-run .tc-lead, .st-skin.ac-orange .tc.st-replay .tc-lead { color: #f7783c; }
+.st-skin.ac-orange .chip.c-style { color: #f7783c; background-color: #f7783c1f; }
+.st-skin.ac-orange .ts-k, .st-skin.ac-orange .ts-mb { color: #f7783c; }
+.st-skin.ac-orange .sc-chip, .st-skin.ac-orange .sc-cap, .st-skin.ac-orange .tc-pfill { background-color: #f7783c; }
+.st-skin.ac-pink .tc.st-run, .st-skin.ac-pink .tc.st-replay { border-top: 2px solid #ff6fae; }
+.st-skin.ac-pink .tc.st-run .tc-ico, .st-skin.ac-pink .tc.st-replay .tc-ico { wash-color: #ff6fae; }
+.st-skin.ac-pink .tc.st-run .tc-lead, .st-skin.ac-pink .tc.st-replay .tc-lead { color: #ff6fae; }
+.st-skin.ac-pink .chip.c-style { color: #ff6fae; background-color: #ff6fae1f; }
+.st-skin.ac-pink .ts-k, .st-skin.ac-pink .ts-mb { color: #ff6fae; }
+.st-skin.ac-pink .sc-chip, .st-skin.ac-pink .sc-cap, .st-skin.ac-pink .tc-pfill { background-color: #ff6fae; }
+.st-skin.ac-lime .tc.st-run, .st-skin.ac-lime .tc.st-replay { border-top: 2px solid #a2e05a; }
+.st-skin.ac-lime .tc.st-run .tc-ico, .st-skin.ac-lime .tc.st-replay .tc-ico { wash-color: #a2e05a; }
+.st-skin.ac-lime .tc.st-run .tc-lead, .st-skin.ac-lime .tc.st-replay .tc-lead { color: #a2e05a; }
+.st-skin.ac-lime .chip.c-style { color: #a2e05a; background-color: #a2e05a1f; }
+.st-skin.ac-lime .ts-k, .st-skin.ac-lime .ts-mb { color: #a2e05a; }
+.st-skin.ac-lime .sc-chip, .st-skin.ac-lime .sc-cap, .st-skin.ac-lime .tc-pfill { background-color: #a2e05a; }
+.st-skin.ac-white .tc.st-run, .st-skin.ac-white .tc.st-replay { border-top: 2px solid #e8ebee; }
+.st-skin.ac-white .tc.st-run .tc-ico, .st-skin.ac-white .tc.st-replay .tc-ico { wash-color: #e8ebee; }
+.st-skin.ac-white .tc.st-run .tc-lead, .st-skin.ac-white .tc.st-replay .tc-lead { color: #e8ebee; }
+.st-skin.ac-white .chip.c-style { color: #e8ebee; background-color: #e8ebee1f; }
+.st-skin.ac-white .ts-k, .st-skin.ac-white .ts-mb { color: #e8ebee; }
+.st-skin.ac-white .sc-chip, .st-skin.ac-white .sc-cap, .st-skin.ac-white .tc-pfill { background-color: #e8ebee; }
+/* errors and the capped start keep their colour whatever the accent */
+.st-skin .ts.err .ts-k, .st-skin .ts.err .ts-mb { color: #f26450; }
+.st-skin .sc.flash.capped .sc-chip { background-color: #f2c14e; color: #1a1405; }
+
+/* ---- style: background (op-*), every panel's fill */
+.st-skin.op-lo .tc { background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171e80), to(#0b0f148c)); }
+.st-skin.op-lo .sc-box { background-color: #0b0f1466; }
+.st-skin.op-lo .k { background-color: #0b0f1470; }
+.st-skin.op-lo .ts { background-color: #0b0f1499; }
+.st-skin.op-lo .fd-row { background-color: #0b0f148c; }
+.st-skin.op-md .tc { background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171ec6), to(#0b0f14d0)); }
+.st-skin.op-md .sc-box { background-color: #0b0f149e; }
+.st-skin.op-md .k { background-color: #0b0f14a6; }
+.st-skin.op-md .ts { background-color: #0b0f14cc; }
+.st-skin.op-md .fd-row { background-color: #0b0f14c4; }
+.st-skin.op-hi .tc { background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171eee), to(#0b0f14f2)); }
+.st-skin.op-hi .sc-box { background-color: #0b0f14e0; }
+.st-skin.op-hi .k { background-color: #0b0f14e0; }
+.st-skin.op-hi .ts { background-color: #0b0f14f0; }
+.st-skin.op-hi .fd-row { background-color: #0b0f14ee; }
+/* pressed and blocked keys and the error toast keep their fill */
+.st-skin .k.no { background-color: #0b0f1459; }
+.st-skin .k.on { background-color: #f2f4f6; }
+.st-skin .k.no.on { background-color: #f26450; }
+.st-skin .ts.err { background-color: #2a0f0ccc; }
+
+/* ---- style: the compact card (cc) */
+.st-skin.cc .tc { width: 300px; padding: 6px 12px 8px 12px; }
+.st-skin.cc .tc-map { visibility: collapse; }
+.st-skin.cc .tc-main { margin-top: 3px; }
+.st-skin.cc .tc-cmp { margin-top: 6px; }
+.st-skin.cc .tc-res { margin-top: 4px; }
+.st-skin.cc .tc-rest { max-width: 270px; }
+.st-skin.cc .tc-segs { height: 3px; margin-top: 7px; }
+.st-skin.cc .tc-prog { margin-top: 7px; }
+.st-skin.cc .cmp-by { max-width: 84px; }
+
+/* ---- style: text size (tx-s / tx-l; tx-m is the sizes above) */
+.st-skin.tx-s .tc-time { font-size: 35.2px; }
+.st-skin.cc.tx-s .tc-time { font-size: 28.2px; }
+.st-skin.tx-s .tc-lead { font-size: 8.4px; }
+.st-skin.cc.tx-s .tc-lead { font-size: 7.9px; }
+.st-skin.tx-s .tc-who { font-size: 8.4px; }
+.st-skin.cc.tx-s .tc-who { font-size: 7.9px; }
+.st-skin.tx-s .tc-map { font-size: 8.4px; }
+.st-skin.tx-s .chip { font-size: 7.5px; }
+.st-skin.cc.tx-s .chip { font-size: 7px; }
+.st-skin.tx-s .tc-stv { font-size: 16.7px; }
+.st-skin.cc.tx-s .tc-stv { font-size: 14.1px; }
+.st-skin.tx-s .tc-stk { font-size: 7.5px; }
+.st-skin.cc.tx-s .tc-stk { font-size: 7px; }
+.st-skin.tx-s .tc-place { font-size: 9.2px; }
+.st-skin.cc.tx-s .tc-place { font-size: 8.8px; }
+.st-skin.tx-s .tc-diff { font-size: 18.5px; }
+.st-skin.cc.tx-s .tc-diff { font-size: 15px; }
+.st-skin.tx-s .cmp-k { font-size: 7.5px; }
+.st-skin.cc.tx-s .cmp-k { font-size: 7px; }
+.st-skin.tx-s .cmp-v { font-size: 9.2px; }
+.st-skin.cc.tx-s .cmp-v { font-size: 8.8px; }
+.st-skin.tx-s .cmp-by { font-size: 11px; }
+.st-skin.cc.tx-s .cmp-by { font-size: 10.1px; }
+.st-skin.tx-s .tc-rank { font-size: 11px; }
+.st-skin.cc.tx-s .tc-rank { font-size: 10.1px; }
+.st-skin.tx-s .tc-rest { font-size: 10.6px; }
+.st-skin.cc.tx-s .tc-rest { font-size: 9.7px; }
+.st-skin.tx-s .tc-pts { font-size: 10.6px; }
+.st-skin.cc.tx-s .tc-pts { font-size: 9.7px; }
+.st-skin.tx-s .sc-num { font-size: 25.5px; }
+.st-skin.tx-s .sc-unit { font-size: 7.9px; }
+.st-skin.tx-s .sc-sk { font-size: 7.9px; }
+.st-skin.tx-s .sc-sv { font-size: 7.9px; }
+.st-skin.tx-s .sc-chip { font-size: 8.4px; }
+.st-skin.tx-s .k-l { font-size: 12.3px; }
+.st-skin.tx-s .k.wide .k-l { font-size: 8.8px; }
+.st-skin.tx-s .ks.v-row .k-l { font-size: 10.6px; }
+.st-skin.tx-s .ks.v-row .k.wide .k-l { font-size: 7.5px; }
+.st-skin.tx-s .ts-k { font-size: 8.4px; }
+.st-skin.tx-s .ts-t { font-size: 13.2px; }
+.st-skin.tx-s .ts-dv { font-size: 10.6px; }
+.st-skin.tx-s .ts-ds { font-size: 7px; }
+.st-skin.tx-s .ts-v { font-size: 9.2px; }
+.st-skin.tx-s .ts-vd { font-size: 9.2px; }
+.st-skin.tx-s .ts-mb { font-size: 13.2px; }
+.st-skin.tx-s .ts-m { font-size: 13.2px; }
+.st-skin.tx-s .fd-n { font-size: 14.1px; }
+.st-skin.tx-s .fd-tag { font-size: 7.5px; }
+.st-skin.tx-s .fd-t { font-size: 11.4px; }
+.st-skin.tx-s .fd-d { font-size: 9.2px; }
+.st-skin.tx-s .sc-num { width: 66.9px; }
+.st-skin.tx-l .tc-time { font-size: 46px; }
+.st-skin.cc.tx-l .tc-time { font-size: 36.8px; }
+.st-skin.tx-l .tc-lead { font-size: 10.9px; }
+.st-skin.cc.tx-l .tc-lead { font-size: 10.3px; }
+.st-skin.tx-l .tc-who { font-size: 10.9px; }
+.st-skin.cc.tx-l .tc-who { font-size: 10.3px; }
+.st-skin.tx-l .tc-map { font-size: 10.9px; }
+.st-skin.tx-l .chip { font-size: 9.8px; }
+.st-skin.cc.tx-l .chip { font-size: 9.2px; }
+.st-skin.tx-l .tc-stv { font-size: 21.8px; }
+.st-skin.cc.tx-l .tc-stv { font-size: 18.4px; }
+.st-skin.tx-l .tc-stk { font-size: 9.8px; }
+.st-skin.cc.tx-l .tc-stk { font-size: 9.2px; }
+.st-skin.tx-l .tc-place { font-size: 12.1px; }
+.st-skin.cc.tx-l .tc-place { font-size: 11.5px; }
+.st-skin.tx-l .tc-diff { font-size: 24.1px; }
+.st-skin.cc.tx-l .tc-diff { font-size: 19.5px; }
+.st-skin.tx-l .cmp-k { font-size: 9.8px; }
+.st-skin.cc.tx-l .cmp-k { font-size: 9.2px; }
+.st-skin.tx-l .cmp-v { font-size: 12.1px; }
+.st-skin.cc.tx-l .cmp-v { font-size: 11.5px; }
+.st-skin.tx-l .cmp-by { font-size: 14.4px; }
+.st-skin.cc.tx-l .cmp-by { font-size: 13.2px; }
+.st-skin.tx-l .tc-rank { font-size: 14.4px; }
+.st-skin.cc.tx-l .tc-rank { font-size: 13.2px; }
+.st-skin.tx-l .tc-rest { font-size: 13.8px; }
+.st-skin.cc.tx-l .tc-rest { font-size: 12.6px; }
+.st-skin.tx-l .tc-pts { font-size: 13.8px; }
+.st-skin.cc.tx-l .tc-pts { font-size: 12.6px; }
+.st-skin.tx-l .sc-num { font-size: 33.3px; }
+.st-skin.tx-l .sc-unit { font-size: 10.3px; }
+.st-skin.tx-l .sc-sk { font-size: 10.3px; }
+.st-skin.tx-l .sc-sv { font-size: 10.3px; }
+.st-skin.tx-l .sc-chip { font-size: 10.9px; }
+.st-skin.tx-l .k-l { font-size: 16.1px; }
+.st-skin.tx-l .k.wide .k-l { font-size: 11.5px; }
+.st-skin.tx-l .ks.v-row .k-l { font-size: 13.8px; }
+.st-skin.tx-l .ks.v-row .k.wide .k-l { font-size: 9.8px; }
+.st-skin.tx-l .ts-k { font-size: 10.9px; }
+.st-skin.tx-l .ts-t { font-size: 17.2px; }
+.st-skin.tx-l .ts-dv { font-size: 13.8px; }
+.st-skin.tx-l .ts-ds { font-size: 9.2px; }
+.st-skin.tx-l .ts-v { font-size: 12.1px; }
+.st-skin.tx-l .ts-vd { font-size: 12.1px; }
+.st-skin.tx-l .ts-mb { font-size: 17.2px; }
+.st-skin.tx-l .ts-m { font-size: 17.2px; }
+.st-skin.tx-l .fd-n { font-size: 18.4px; }
+.st-skin.tx-l .fd-tag { font-size: 9.8px; }
+.st-skin.tx-l .fd-t { font-size: 14.9px; }
+.st-skin.tx-l .fd-d { font-size: 12.1px; }
+.st-skin.tx-l .sc-num { width: 87.4px; }
+/* the compact card at text size M */
+.st-skin.cc.tx-m .tc-time { font-size: 32px; }
+.st-skin.cc.tx-m .tc-lead { font-size: 9px; }
+.st-skin.cc.tx-m .tc-who { font-size: 9px; }
+.st-skin.cc.tx-m .chip { font-size: 8px; }
+.st-skin.cc.tx-m .tc-stv { font-size: 16px; }
+.st-skin.cc.tx-m .tc-stk { font-size: 8px; }
+.st-skin.cc.tx-m .tc-place { font-size: 10px; }
+.st-skin.cc.tx-m .tc-diff { font-size: 17px; }
+.st-skin.cc.tx-m .cmp-k { font-size: 8px; }
+.st-skin.cc.tx-m .cmp-v { font-size: 10px; }
+.st-skin.cc.tx-m .cmp-by { font-size: 11.5px; }
+.st-skin.cc.tx-m .tc-rank { font-size: 11.5px; }
+.st-skin.cc.tx-m .tc-rest { font-size: 11px; }
+.st-skin.cc.tx-m .tc-pts { font-size: 11px; }

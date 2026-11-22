@@ -965,7 +965,7 @@ namespace SharpTimer
                                 {
                                     // The Panorama HUD puts the points on the result card instead.
                                     HudPoints(player, Convert.ToInt32(newPts - oldPts));
-                                    if (HudWantsChat(player, HudSettings.RecordsInChat))
+                                    if (HudFinishInChat(player!))
                                         Utils.PrintToChat(player!, Localizer["gained_points",
                                             playerName, Convert.ToInt32(newPts - oldPts),
                                             newPts]);
@@ -1117,7 +1117,7 @@ namespace SharpTimer
                                 {
                                     // The Panorama HUD puts the points on the result card instead.
                                     HudPoints(player, Convert.ToInt32(newPts - oldPts));
-                                    if (HudWantsChat(player, HudSettings.RecordsInChat))
+                                    if (HudFinishInChat(player!))
                                         Utils.PrintToChat(player!, Localizer["gained_points",
                                             playerName, Convert.ToInt32(newPts - oldPts),
                                             newPts]);

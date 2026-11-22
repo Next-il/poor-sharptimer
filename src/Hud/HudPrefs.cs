@@ -8,60 +8,133 @@ using Npgsql;
 namespace SharpTimer.Hud;
 
 /// <summary>
-/// Where a player wants each part of the HUD. The timer HUD on/off, keys on/off and splits on/off stay where
-/// they always were (PlayerStats.HideTimerHud / HideKeys / HideChatSpeed, so !hud on|off, !keys and !splits
-/// keep working and old rows keep their meaning). Everything new is here.
+/// One player's timer HUD settings, everything the !hud settings panel changes. Three switches stay where they
+/// always were, in PlayerStats: HideTimerHud (!hud on|off), HideKeys (!keys) and HideChatSpeed (!splits), so the
+/// old commands keep working and old rows keep their meaning. Everything else is here.
+///
+/// <para>Saved as "key=value;..." holding only what differs from the server defaults, so a default changed later
+/// in hud.json still reaches everyone who never touched that option. Keys: card cs (timer card spot, size),
+/// cl cls (speed: spot or nx, size; "cl" is the old speed + keys cluster, so a saved cluster spot is now the speed
+/// spot), ky kys (keys), kr (keys in one row), ts tss (toast: spot or card, size), fd fds (records feed),
+/// cd sp sb sy pc rk fo (card, speed, speed bar, sync, PB and SR, rank, feed: 0 hides), ac (accent), cc
+/// (compact card), op (background lo|md|hi), tx (text size), spc ssc fc (splits, start speed and finish
+/// messages in chat), hs (has opened the settings once). Unknown keys and bad values are ignored.</para>
 /// </summary>
 public sealed class HudPrefs
 {
+    // ---- layout
     public string Card = "bc";
     public string CardSize = "m";
-    public string Cluster = "xu";
-    public string ClusterSize = "m";
+    /// <summary>The speed readout's spot, or <see cref="HudLayout.Beside"/>.</summary>
+    public string Speed = "xu";
+    public string SpeedSize = "m";
+    public string Keys = "rw";
+    public string KeysSize = "m";
+    public bool KeysRow;
     public string Toast = HudLayout.WithCard;
     public string ToastSize = "m";
     public string Feed = "tr";
     public string FeedSize = "m";
-    public bool Speed = true;
-    public bool KeysRow;
+
+    // ---- show / hide
+    public bool CardOn = true;
+    public bool SpeedOn = true;
+    public bool SpeedBar = true;
+    public bool Sync = true;
+    public bool Compare = true;
+    public bool Rank = true;
     public bool FeedOn = true;
+
+    // ---- style
+    public string Accent = "ice";
+    public bool Compact;
+    public string Opacity = "md";
+    public string Text = "m";
+
+    // ---- chat
+    public bool SplitsChat;
+    public bool SpeedChat;
+    public bool FinishChat;
+
+    /// <summary>Has opened the settings at least once: no more hints.</summary>
+    public bool Seen;
 
     public HudPrefs Clone() => (HudPrefs)MemberwiseClone();
 
-    public static HudPrefs From(HudDefaults d)
+    public static HudPrefs From(HudConfig config)
     {
+        var d = config.Defaults ?? new HudDefaults();
         var p = new HudPrefs();
         p.Apply("card", d.Card);
         p.Apply("cs", d.CardSize);
         p.Apply("cl", d.Cluster);
         p.Apply("cls", d.ClusterSize);
+        p.Apply("ky", d.Keys);
+        p.Apply("kys", d.KeysSize);
         p.Apply("ts", d.Toast);
         p.Apply("tss", d.ToastSize);
         p.Apply("fd", d.Feed);
         p.Apply("fds", d.FeedSize);
-        p.Speed = d.Speed;
         p.KeysRow = string.Equals(d.KeysLayout, "row", StringComparison.OrdinalIgnoreCase);
+        p.CardOn = d.CardOn;
+        p.SpeedOn = d.Speed;
+        p.SpeedBar = d.SpeedBar;
+        p.Sync = d.Sync;
+        p.Compare = d.Compare;
+        p.Rank = d.Rank;
         p.FeedOn = d.FeedOn;
+        p.Apply("ac", d.Accent);
+        p.Compact = d.CompactCard;
+        p.Apply("op", d.Opacity);
+        p.Apply("tx", d.TextSize);
+        p.SplitsChat = config.SplitsInChat;
+        p.SpeedChat = config.StartSpeedInChat;
+        p.FinishChat = config.RecordsInChat;
+        // Two parts on one spot from a hand-edited hud.json: the keys make room.
+        if (p.Keys == p.Card || p.Keys == p.Speed || p.Keys == p.Toast || p.Keys == p.Feed)
+            p.Keys = HudLayout.Positions.FirstOrDefault(s => s != p.Card && s != p.Speed && s != p.Toast && s != p.Feed) ?? p.Keys;
         return p;
     }
 
-    /// <summary>"card=bc;cs=m;cl=xu;...": only what differs from the server defaults, so a default changed
-    /// later in hud.json still reaches everyone who never touched that option.</summary>
-    public string Encode(HudPrefs defaults)
+    /// <summary>Puts the layout (spots, sizes, keys layout) back to <paramref name="d"/>.</summary>
+    public void ResetLayout(HudPrefs d)
+    {
+        Card = d.Card; CardSize = d.CardSize; Speed = d.Speed; SpeedSize = d.SpeedSize; Keys = d.Keys; KeysSize = d.KeysSize;
+        KeysRow = d.KeysRow; Toast = d.Toast; ToastSize = d.ToastSize; Feed = d.Feed; FeedSize = d.FeedSize;
+    }
+
+    private static string B(bool v) => v ? "1" : "0";
+
+    public string Encode(HudPrefs d)
     {
         var parts = new List<string>();
         void Add(string key, string value, string def) { if (value != def) parts.Add($"{key}={value}"); }
-        Add("card", Card, defaults.Card);
-        Add("cs", CardSize, defaults.CardSize);
-        Add("cl", Cluster, defaults.Cluster);
-        Add("cls", ClusterSize, defaults.ClusterSize);
-        Add("ts", Toast, defaults.Toast);
-        Add("tss", ToastSize, defaults.ToastSize);
-        Add("fd", Feed, defaults.Feed);
-        Add("fds", FeedSize, defaults.FeedSize);
-        Add("sp", Speed ? "1" : "0", defaults.Speed ? "1" : "0");
-        Add("kr", KeysRow ? "1" : "0", defaults.KeysRow ? "1" : "0");
-        Add("fo", FeedOn ? "1" : "0", defaults.FeedOn ? "1" : "0");
+        Add("card", Card, d.Card);
+        Add("cs", CardSize, d.CardSize);
+        Add("cl", Speed, d.Speed);
+        Add("cls", SpeedSize, d.SpeedSize);
+        Add("ky", Keys, d.Keys);
+        Add("kys", KeysSize, d.KeysSize);
+        Add("kr", B(KeysRow), B(d.KeysRow));
+        Add("ts", Toast, d.Toast);
+        Add("tss", ToastSize, d.ToastSize);
+        Add("fd", Feed, d.Feed);
+        Add("fds", FeedSize, d.FeedSize);
+        Add("cd", B(CardOn), B(d.CardOn));
+        Add("sp", B(SpeedOn), B(d.SpeedOn));
+        Add("sb", B(SpeedBar), B(d.SpeedBar));
+        Add("sy", B(Sync), B(d.Sync));
+        Add("pc", B(Compare), B(d.Compare));
+        Add("rk", B(Rank), B(d.Rank));
+        Add("fo", B(FeedOn), B(d.FeedOn));
+        Add("ac", Accent, d.Accent);
+        Add("cc", B(Compact), B(d.Compact));
+        Add("op", Opacity, d.Opacity);
+        Add("tx", Text, d.Text);
+        Add("spc", B(SplitsChat), B(d.SplitsChat));
+        Add("ssc", B(SpeedChat), B(d.SpeedChat));
+        Add("fc", B(FinishChat), B(d.FinishChat));
+        Add("hs", B(Seen), B(d.Seen));
         return string.Join(';', parts);
     }
 
@@ -76,6 +149,9 @@ public sealed class HudPrefs
             if (eq > 0) p.Apply(part[..eq].Trim().ToLowerInvariant(), part[(eq + 1)..].Trim().ToLowerInvariant());
         }
 
+        // A row saved before keys had a spot of their own: keys go to their default unless a part already sits there.
+        if (p.Keys == p.Card || p.Keys == p.Speed || p.Keys == p.Toast || p.Keys == p.Feed)
+            p.Keys = HudLayout.Positions.FirstOrDefault(s => s != p.Card && s != p.Speed && s != p.Toast && s != p.Feed) ?? p.Keys;
         return p;
     }
 
@@ -86,16 +162,31 @@ public sealed class HudPrefs
         switch (key)
         {
             case "card": if (HudLayout.IsPosition(v)) Card = v; break;
-            case "cl": if (HudLayout.IsPosition(v) || v == HudLayout.Beside) Cluster = v; break;
+            case "cl": if (HudLayout.IsPosition(v) || v == HudLayout.Beside) Speed = v; break;
+            case "ky": if (HudLayout.IsPosition(v)) Keys = v; break;
             case "ts": if (HudLayout.IsPosition(v) || v == HudLayout.WithCard) Toast = v; break;
             case "fd": if (HudLayout.IsPosition(v)) Feed = v; break;
             case "cs": if (HudLayout.IsSize(v)) CardSize = v; break;
-            case "cls": if (HudLayout.IsSize(v)) ClusterSize = v; break;
+            case "cls": if (HudLayout.IsSize(v)) SpeedSize = v; break;
+            case "kys": if (HudLayout.IsSize(v)) KeysSize = v; break;
             case "tss": if (HudLayout.IsSize(v)) ToastSize = v; break;
             case "fds": if (HudLayout.IsSize(v)) FeedSize = v; break;
-            case "sp": Speed = v != "0"; break;
             case "kr": KeysRow = v == "1"; break;
+            case "cd": CardOn = v != "0"; break;
+            case "sp": SpeedOn = v != "0"; break;
+            case "sb": SpeedBar = v != "0"; break;
+            case "sy": Sync = v != "0"; break;
+            case "pc": Compare = v != "0"; break;
+            case "rk": Rank = v != "0"; break;
             case "fo": FeedOn = v != "0"; break;
+            case "ac": if (HudLayout.IsAccent(v)) Accent = v; break;
+            case "cc": Compact = v == "1"; break;
+            case "op": if (HudLayout.IsOpacity(v)) Opacity = v; break;
+            case "tx": if (HudLayout.IsSize(v)) Text = v; break;
+            case "spc": SplitsChat = v == "1"; break;
+            case "ssc": SpeedChat = v == "1"; break;
+            case "fc": FinishChat = v == "1"; break;
+            case "hs": Seen = v == "1"; break;
         }
     }
 }
@@ -118,7 +209,7 @@ internal sealed class HudPrefsStore
 
     public HudPrefsStore(SharpTimer plugin) => _plugin = plugin;
 
-    public HudPrefs Defaults => HudPrefs.From(_plugin.HudSettings.Defaults);
+    public HudPrefs Defaults => HudPrefs.From(_plugin.HudSettings);
 
     public HudPrefs Get(ulong steamId) => _prefs.TryGetValue(steamId, out var p) ? p : Defaults;
 

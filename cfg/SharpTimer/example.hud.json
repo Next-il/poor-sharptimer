@@ -21,7 +21,8 @@
   "ShowWorldRecord": false,      // WR as the card's third time (needs a global API key; this fork has none)
   // The SR chat ad is sharptimer_ad_sr_enabled in config.cfg, as before.
 
-  // Chat lines the HUD replaces. true keeps them in chat as well.
+  // Chat lines the HUD replaces. true keeps them in chat as well. The first three are only the defaults of each
+  // player's Chat tab in !hud (splits, finish messages, speed in chat); players change their own.
   "SplitsInChat": false,
   "RecordsInChat": false,
   "StartSpeedInChat": false,
@@ -37,20 +38,40 @@
   // The speed bar's full scale in u/s (50 steps).
   "SpeedBarMax": 3500,
 
-  // What a player gets until they change it with !hud.
+  // Until a player has opened !hud once: "!HUD SETTINGS" on the card in the start zone and one chat line after joining.
+  "SettingsHint": true,
+
+  // What a player gets until they change it in !hud (or !settings / !hudsettings).
   // Spots: tl tc tr (top left/center/right), ml mr (middle left/right), xa xu (above/under the crosshair),
-  // bc br (bottom center/right). Cluster also takes "nx" (next to the card); Toast also takes "card" (with it).
+  // bc br (bottom center/right), rw (right side, above the weapon list). Sizes: s m l.
+  // Cluster is the speed readout (it was speed + keys); it also takes "nx" (next to the card). Toast also takes
+  // "card" (with it). Two parts on one spot: the keys move.
   "Defaults": {
     "Card": "bc",
     "CardSize": "m",
     "Cluster": "xu",
     "ClusterSize": "m",
+    "Keys": "rw",
+    "KeysSize": "m",
+    "KeysLayout": "grid",          // "grid" or "row"
     "Toast": "card",
     "ToastSize": "m",
     "Feed": "tr",
     "FeedSize": "m",
+
+    // Show / hide. The timer HUD, keys and split toast switches are !hud on|off, !keys and !splits, per player.
+    "CardOn": true,
     "Speed": true,
-    "KeysLayout": "grid",
-    "FeedOn": true
+    "SpeedBar": true,
+    "Sync": true,
+    "Compare": true,               // PB and SR on the card
+    "Rank": true,
+    "FeedOn": true,
+
+    // Style.
+    "Accent": "ice",               // ice, orange, pink, lime, white
+    "CompactCard": false,
+    "Opacity": "md",               // lo (light), md, hi (solid)
+    "TextSize": "m"
   }
 }

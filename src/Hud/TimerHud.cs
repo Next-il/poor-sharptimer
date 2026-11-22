@@ -25,9 +25,10 @@ internal enum FeedKind { Sr, Pb, Finish, Stage }
 internal sealed record FeedLine(FeedKind Kind, string Name, string Tag, string Time, string Diff);
 
 /// <summary>
-/// The SharpTimer HUD on Panorama (hud/panorama/layout/custom_game/sharptimer_hud.xml): the timer card, speed +
-/// keys, one toast slot for splits and replies, and a feed of other players' records. It replaces the center
-/// HTML that was rebuilt and sent to every player 64 times a second.
+/// The SharpTimer HUD on Panorama (hud/panorama/layout/custom_game/sharptimer_hud.xml): the timer card, the speed,
+/// the keys, one toast slot for splits and replies, and a feed of other players' records. It replaces the center
+/// HTML that was rebuilt and sent to every player 64 times a second. Each part goes where the player put it in
+/// !hud, in the player's accent, background and text size.
 ///
 /// <para><b>Who draws what.</b> A runner's state (the result of their last finish, their splits, their toast,
 /// the start-speed chip) lives in a <see cref="Runner"/> per runner slot. Each viewer's panel shows one runner:
@@ -209,8 +210,21 @@ internal sealed class TimerHud : IDisposable
                 if (p is not { IsValid: true } || p.SteamID != steamId || !_viewers.TryGetValue(slot, out var viewer)) return;
                 viewer.Prefs = prefs;
                 viewer.StaticSlot = -1;
+                if (!prefs.Seen && Cfg.SettingsHint) Hint(slot, steamId);
             });
         }
+    }
+
+    /// <summary>One chat line, a little after joining, for a player who has never opened the settings.</summary>
+    private void Hint(int slot, ulong steamId)
+    {
+        _st.AddTimer(20f, () =>
+        {
+            var p = Utilities.GetPlayerFromSlot(slot);
+            if (p is not { IsValid: true } || p.SteamID != steamId || !Reaches(p) || PrefsOf(p).Seen) return;
+            _st.Utils.PrintToChat(p, $"Type {_st.primaryChatColor}!hud{CounterStrikeSharp.API.Modules.Utils.ChatColors.Default} " +
+                                     "to move, hide or restyle any part of the timer HUD.");
+        });
     }
 
     public void Forget(int slot)
@@ -243,6 +257,23 @@ internal sealed class TimerHud : IDisposable
         if (!_viewers.TryGetValue(player.Slot, out var v)) return;
         if (prefs != null) v.Prefs = prefs;
         v.StaticSlot = -1;
+        if (v.Preview) SyncSample(player, v);
+    }
+
+    /// <summary>The sample feed line follows the records feed switch while the settings are open.</summary>
+    private void SyncSample(CCSPlayerController player, Viewer v)
+    {
+        var shown = v.Feed.Any(e => e is { Sample: true, Leaving: false });
+        var want = v.Preview && v.Prefs.FeedOn;
+        if (want && !shown)
+        {
+            Push(player, v, new FeedLine(FeedKind.Pb, player.PlayerName, "PB", "1:24.218", "-0.877"), sample: true);
+        }
+        else if (!want && shown)
+        {
+            for (var i = 0; i < v.Feed.Length; i++)
+                if (v.Feed[i] is { Sample: true }) Leave(player, v, i);
+        }
     }
 
     /// <summary>While !hud is open: a sample toast and feed line, so every part shows where it goes.</summary>
@@ -251,16 +282,7 @@ internal sealed class TimerHud : IDisposable
         if (!_viewers.TryGetValue(player.Slot, out var v) || v.Preview == on) return;
         v.Preview = on;
         v.StaticSlot = -1;
-
-        if (on)
-        {
-            Push(player, v, new FeedLine(FeedKind.Pb, player.PlayerName, "PB", "1:24.218", "-0.877"), sample: true);
-        }
-        else
-        {
-            for (var i = 0; i < v.Feed.Length; i++)
-                if (v.Feed[i] is { Sample: true }) Leave(player, v, i);
-        }
+        SyncSample(player, v);
     }
 
     private Runner RunnerOf(int slot)
@@ -502,7 +524,7 @@ internal sealed class TimerHud : IDisposable
         return true;
     }
 
-    /// <summary>Nothing to show (spectating nobody): the card and the cluster leave, the feed stays.</summary>
+    /// <summary>Nothing to show (spectating nobody): the card, the speed and the keys leave, the feed stays.</summary>
     private void Blank(CCSPlayerController viewer)
     {
         if (!_viewers.TryGetValue(viewer.Slot, out var v)) return;
@@ -511,6 +533,7 @@ internal sealed class TimerHud : IDisposable
         v.Source = -1;
         v.W.Cls(_panel!, viewer, "tc", "show", false);
         v.W.Cls(_panel!, viewer, "sc", "show", false);
+        v.W.Cls(_panel!, viewer, "ks", "show", false);
         HideToast(viewer, v);
     }
 
@@ -538,12 +561,14 @@ internal sealed class TimerHud : IDisposable
         var mine = _st.playerTimers.TryGetValue(viewer.Slot, out var own) ? own : timer;
         var now = Server.CurrentTime;
 
-        var showCard = !mine.HideTimerHud && _st.hudOverlayEnabled;
-        var showSpeed = showCard && _st.VelocityHudEnabled && v.Prefs.Speed;
+        // !hud off (HideTimerHud) hides the card and the speed, as it always did; each also has its own switch.
+        var hudOn = !mine.HideTimerHud && _st.hudOverlayEnabled;
+        var showCard = hudOn && v.Prefs.CardOn;
+        var showSpeed = hudOn && _st.VelocityHudEnabled && v.Prefs.SpeedOn;
         var showKeys = !mine.HideKeys && _st.keysOverlayEnabled;
 
         if (Due(ref v.StaticSlot, tick, StaticRate))
-            DrawStatic(viewer, v, runner, timer, r, mine, showCard, showSpeed, showKeys, now);
+            DrawStatic(viewer, v, runner, timer, r, mine, hudOn, showCard, showSpeed, showKeys, now);
 
         if (showCard) DrawClock(viewer, v, runner, timer, r, tick);
         if (showSpeed) DrawSpeed(viewer, v, runner, timer, tick);
@@ -663,19 +688,25 @@ internal sealed class TimerHud : IDisposable
     };
 
     private void DrawStatic(CCSPlayerController viewer, Viewer v, CCSPlayerController runner, PlayerTimerInfo t, Runner r,
-        PlayerTimerInfo mine, bool showCard, bool showSpeed, bool showKeys, float now)
+        PlayerTimerInfo mine, bool hudOn, bool showCard, bool showSpeed, bool showKeys, float now)
     {
         var panel = _panel!;
         var w = v.W;
         var prefs = v.Prefs;
 
+        // ------------------------------------------------------------ style
+        w.OneOf(panel, viewer, "st_skin", "ac-" + prefs.Accent, HudLayout.AccentClasses);
+        w.OneOf(panel, viewer, "st_skin", "op-" + prefs.Opacity, HudLayout.OpacityClasses);
+        w.OneOf(panel, viewer, "st_skin", "tx-" + prefs.Text, HudLayout.TextClasses);
+        w.Cls(panel, viewer, "st_skin", "cc", prefs.Compact);
+
         // ------------------------------------------------------------ placement
         w.OneOf(panel, viewer, "st_cg", "p-" + prefs.Card, HudLayout.PosClasses);
         w.OneOf(panel, viewer, "st_cg_sz", "sz-" + prefs.CardSize, HudLayout.SizeClasses);
-        w.OneOf(panel, viewer, "st_cl", prefs.Cluster == HudLayout.Beside
-            ? $"nx-{prefs.Card}-{prefs.CardSize}-{prefs.ClusterSize}"
-            : "p-" + prefs.Cluster, HudLayout.ClusterClasses);
-        w.OneOf(panel, viewer, "st_cl_sz", "sz-" + prefs.ClusterSize, HudLayout.SizeClasses);
+        w.OneOf(panel, viewer, "st_sp", HudLayout.SpeedClass(prefs), HudLayout.SpeedClasses);
+        w.OneOf(panel, viewer, "st_sp_sz", "sz-" + prefs.SpeedSize, HudLayout.SizeClasses);
+        w.OneOf(panel, viewer, "st_ks", "p-" + prefs.Keys, HudLayout.PosClasses);
+        w.OneOf(panel, viewer, "st_ks_sz", "sz-" + prefs.KeysSize, HudLayout.SizeClasses);
         var toastFree = prefs.Toast != HudLayout.WithCard;
         w.OneOf(panel, viewer, "st_tf", "p-" + (toastFree ? prefs.Toast : "tc"), HudLayout.PosClasses);
         w.OneOf(panel, viewer, "st_tf_sz", "sz-" + prefs.ToastSize, HudLayout.SizeClasses);
@@ -693,8 +724,9 @@ internal sealed class TimerHud : IDisposable
         }
 
         DrawCard(viewer, v, runner, t, r, showCard, now);
-        DrawCluster(viewer, v, runner, t, r, showSpeed, showKeys, now);
-        DrawToast(viewer, v, r, mine, showCard, now);
+        DrawSpeedPanel(viewer, v, t, r, showSpeed, now);
+        DrawKeysPanel(viewer, v, t, showKeys);
+        DrawToast(viewer, v, r, mine, hudOn, now);
     }
 
     private void DrawCard(CCSPlayerController viewer, Viewer v, CCSPlayerController runner, PlayerTimerInfo t, Runner r, bool show, float now)
@@ -803,7 +835,9 @@ internal sealed class TimerHud : IDisposable
             pb = t.CachedBonusInfo.TryGetValue(bonus, out var b) && b.PbTicks > 0 ? HudLayout.Time(b.PbTicks) : "";
         else
             pb = (t.CachedPB ?? "").Trim();
-        w.Cls(panel, viewer, "tc", "nopb", pb.Length == 0);
+        var prefs = v.Prefs;
+        var pbOn = pb.Length > 0 && prefs.Compare;
+        w.Cls(panel, viewer, "tc", "nopb", !pbOn);
         w.Cls(panel, viewer, "tc", "rp-pb", replay && replayKind == "pb");
         if (pb.Length > 0) w.Var(panel, viewer, "tc_pb", pb);
 
@@ -829,7 +863,8 @@ internal sealed class TimerHud : IDisposable
             }
         }
 
-        w.Cls(panel, viewer, "tc", "nosr", sr.Length == 0);
+        var srOn = sr.Length > 0 && prefs.Compare;
+        w.Cls(panel, viewer, "tc", "nosr", !srOn);
         if (sr.Length > 0)
         {
             w.Var(panel, viewer, "tc_srk", srKey);
@@ -841,8 +876,8 @@ internal sealed class TimerHud : IDisposable
         // Today's HUD shows the rank icon (sharptimer_enable_rankicons_hud). A rank whose icon is not baked into the
         // addon falls back to its name.
         var wantIcon = Cfg.RankDisplay is "icon" or "both" && _st.RankIconsEnabled;
-        var useIcon = wantIcon && rankIcon != null && rankName.Length > 0;
-        var useText = rankName.Length > 0 && (Cfg.RankDisplay is "text" or "both" || (wantIcon && rankIcon == null));
+        var useIcon = prefs.Rank && wantIcon && rankIcon != null && rankName.Length > 0;
+        var useText = prefs.Rank && rankName.Length > 0 && (Cfg.RankDisplay is "text" or "both" || (wantIcon && rankIcon == null));
         w.Cls(panel, viewer, "tc", "rk-icon", useIcon);
         w.Cls(panel, viewer, "tc", "rk-text", useText);
         if (useIcon) w.OneOf(panel, viewer, "tc_ricon", rankIcon, HudLayout.RankIconClasses);
@@ -851,6 +886,11 @@ internal sealed class TimerHud : IDisposable
             w.Var(panel, viewer, "tc_rank", rankName);
             w.OneOf(panel, viewer, "tc_rank", rankColor, HudLayout.RankColorClasses);
         }
+
+        // PB, SR and rank all off: the row goes, with its margin.
+        w.Cls(panel, viewer, "tc", "nocmp", !pbOn && !srOn && !useIcon && !useText);
+        // "!HUD SETTINGS" in the start zone until the player has opened the settings once.
+        w.Cls(panel, viewer, "tc", "hint", Cfg.SettingsHint && !prefs.Seen && !spectating);
 
         // ------------------------------------------------------------ the split bar
         DrawSegments(viewer, v, t, r, kind, count, current, running, bonus != 0 || replay);
@@ -895,15 +935,13 @@ internal sealed class TimerHud : IDisposable
         }
     }
 
-    private void DrawCluster(CCSPlayerController viewer, Viewer v, CCSPlayerController runner, PlayerTimerInfo t, Runner r,
-        bool showSpeed, bool showKeys, float now)
+    private void DrawSpeedPanel(CCSPlayerController viewer, Viewer v, PlayerTimerInfo t, Runner r, bool show, float now)
     {
         var panel = _panel!;
         var w = v.W;
-        w.Cls(panel, viewer, "sc", "show", showSpeed || showKeys);
-        w.Cls(panel, viewer, "sc", "nospeed", !showSpeed);
-        w.Cls(panel, viewer, "sc", "nokeys", !showKeys);
-        w.Cls(panel, viewer, "sc", "nosync", !_st.StrafeHudEnabled || t.IsReplaying);
+        w.Cls(panel, viewer, "sc", "show", show);
+        w.Cls(panel, viewer, "sc", "nobar", !v.Prefs.SpeedBar);
+        w.Cls(panel, viewer, "sc", "nosync", !_st.StrafeHudEnabled || t.IsReplaying || !v.Prefs.Sync);
         w.Cls(panel, viewer, "sc", "vc", _st.useDynamicColor);
 
         var chip = now < r.ChipUntil && (t.IsTimerRunning || t.IsBonusTimerRunning);
@@ -913,7 +951,13 @@ internal sealed class TimerHud : IDisposable
         var zone = _st.maxStartingSpeedEnabled && (t.inStartzone || (chip && r.ChipCapped));
         w.Cls(panel, viewer, "sc", "zone", zone);
         if (zone) w.OneOf(panel, viewer, "sp_cap", "cap-" + HudLayout.Step(_st.maxStartingSpeed, Cfg.SpeedBarMax)[1..], HudLayout.CapClasses);
+    }
 
+    private void DrawKeysPanel(CCSPlayerController viewer, Viewer v, PlayerTimerInfo t, bool show)
+    {
+        var panel = _panel!;
+        var w = v.W;
+        w.Cls(panel, viewer, "ks", "show", show);
         w.Cls(panel, viewer, "ks", "v-row", v.Prefs.KeysRow);
         var running = t.IsTimerRunning || t.IsBonusTimerRunning || t.IsReplaying;
         var blocked = Blocked(t.currentStyle);
@@ -922,7 +966,7 @@ internal sealed class TimerHud : IDisposable
         w.Cls(panel, viewer, "ks", "chute", t.currentStyle == 11);
     }
 
-    private void DrawToast(CCSPlayerController viewer, Viewer v, Runner r, PlayerTimerInfo mine, bool showCard, float now)
+    private void DrawToast(CCSPlayerController viewer, Viewer v, Runner r, PlayerTimerInfo mine, bool hudOn, float now)
     {
         var panel = _panel!;
         var w = v.W;
@@ -944,7 +988,8 @@ internal sealed class TimerHud : IDisposable
         v.ToastPanel = target;
 
         HudToast? toast = null;
-        if (r.Toast != null && now < r.ToastUntil && (!r.Toast.Split || !mine.HideChatSpeed) && (showCard || !r.Toast.Split))
+        // Splits: off with !splits (the split toast) or !hud off. Replies always.
+        if (r.Toast != null && now < r.ToastUntil && (!r.Toast.Split || (!mine.HideChatSpeed && hudOn)))
             toast = r.Toast;
         else if (v.Preview)
             toast = new HudToast(false, "SPLITS", Bold: "Stage 3  1:02.114", Message: "splits and replies show here");

@@ -226,7 +226,7 @@ namespace SharpTimer
                                                                     $" [{Utils.FormatSpeedDifferenceFromString(currentSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                     $" {(previousStageSpeed != srStageSpeed && enableStageSR ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
+                                if (!playerTimers[slot].HideChatSpeed && HudSplitsInChat(player))
                                 {
                                     Utils.PrintToChat(player, $"Entering Stage: {stageTrigger}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{formattedStageTicks}{ChatColors.White}] " +
@@ -326,7 +326,7 @@ namespace SharpTimer
                                                                    $" [{Utils.FormatSpeedDifferenceFromString(currentStageSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                    $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
+                                if (!playerTimers[slot].HideChatSpeed && HudSplitsInChat(player))
                                 {
                                     Utils.PrintToChat(player, $"Checkpoint: {playerTimer.CurrentMapCheckpoint}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +
@@ -435,7 +435,7 @@ namespace SharpTimer
                                                                     $" [{Utils.FormatSpeedDifferenceFromString(currentStageSpeed, previousStageSpeed)}u/s{ChatColors.White}]" +
                                                                     $" {(previousStageSpeed != srStageSpeed ? $"[SR {Utils.FormatSpeedDifferenceFromString(currentStageSpeed, srStageSpeed)}u/s{ChatColors.White}]" : "")}");
 
-                                if (!playerTimers[slot].HideChatSpeed && HudWantsChat(player, HudSettings.SplitsInChat))
+                                if (!playerTimers[slot].HideChatSpeed && HudSplitsInChat(player))
                                 {
                                     Utils.PrintToChat(player, $"Bonus Checkpoint: {bonusCheckpointTrigger}");
                                     Utils.PrintToChat(player, $"Time: {ChatColors.White}[{primaryChatColor}{Utils.FormatTime(playerTimerTicks)}{ChatColors.White}] " +

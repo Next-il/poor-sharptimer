@@ -6,7 +6,7 @@ namespace SharpTimer.Hud;
 
 /// <summary>
 /// The names the two layouts declare (hud/tools/gen_layouts.py writes them; these must match). Positions are
-/// the nine spots every group can take; speed + keys can also sit next to the card, the toast with the card.
+/// the ten spots every part can take; the speed can also sit next to the card, the toast with the card.
 /// </summary>
 internal static class HudLayout
 {
@@ -15,10 +15,10 @@ internal static class HudLayout
     public const string HudRoot = "StHudRoot";
     public const string MenuRoot = "StMenuRoot";
 
-    /// <summary>The nine spots, in the generator's order.</summary>
-    public static readonly string[] Positions = ["tl", "tc", "tr", "ml", "xa", "xu", "mr", "bc", "br"];
+    /// <summary>The spots, in the generator's order. rw is the right side above CS2's weapon list.</summary>
+    public static readonly string[] Positions = ["tl", "tc", "tr", "ml", "xa", "xu", "mr", "bc", "br", "rw"];
 
-    /// <summary>Speed + keys next to the card.</summary>
+    /// <summary>The speed next to the card.</summary>
     public const string Beside = "nx";
 
     /// <summary>The toast in the card's own group, above it (or under it when the card hangs from the top).</summary>
@@ -40,6 +40,7 @@ internal static class HudLayout
         "mr" => "Middle right",
         "bc" => "Bottom center",
         "br" => "Bottom right",
+        "rw" => "Right, above the weapons",
         Beside => "Next to the card",
         WithCard => "With the card",
         _ => pos,
@@ -51,13 +52,29 @@ internal static class HudLayout
     public static readonly string[] PosClasses = Positions.Select(p => "p-" + p).ToArray();
     public static readonly string[] SizeClasses = Sizes.Select(s => "sz-" + s).ToArray();
 
-    /// <summary>Every class the cluster's outer panel can wear: the nine spots and the 81 next-to-the-card ones.</summary>
-    public static readonly string[] ClusterClasses = PosClasses
-        .Concat(from p in Positions from c in Sizes from k in Sizes select $"nx-{p}-{c}-{k}").ToArray();
+    /// <summary>Every class the speed's outer panel can wear: the spots, then next to the card (nx-) and next to
+    /// the compact card (nxc-), per card spot, card size and speed size.</summary>
+    public static readonly string[] SpeedClasses = PosClasses
+        .Concat(from x in new[] { "nx", "nxc" } from p in Positions from c in Sizes from k in Sizes select $"{x}-{p}-{c}-{k}").ToArray();
 
-    /// <summary>The mini map's toast block: the nine spots and the 27 with-the-card ones.</summary>
+    public static string SpeedClass(HudPrefs p) => p.Speed == Beside
+        ? $"{(p.Compact ? "nxc" : "nx")}-{p.Card}-{p.CardSize}-{p.SpeedSize}"
+        : "p-" + p.Speed;
+
+    /// <summary>The mini map's toast block: the spots, then with the card (wc-) and with the compact card (wcc-).</summary>
     public static readonly string[] MapToastClasses = PosClasses
-        .Concat(from p in Positions from c in Sizes select $"wc-{p}-{c}").ToArray();
+        .Concat(from x in new[] { "wc", "wcc" } from p in Positions from c in Sizes select $"{x}-{p}-{c}").ToArray();
+
+    // ------------------------------------------------------------------ style (classes on st_skin)
+
+    public static readonly string[] Accents = ["ice", "orange", "pink", "lime", "white"];
+    public static readonly string[] AccentClasses = Accents.Select(a => "ac-" + a).ToArray();
+    public static readonly string[] Opacities = ["lo", "md", "hi"];
+    public static readonly string[] OpacityClasses = Opacities.Select(o => "op-" + o).ToArray();
+    public static readonly string[] TextClasses = Sizes.Select(s => "tx-" + s).ToArray();
+
+    public static bool IsAccent(string? a) => a != null && Array.IndexOf(Accents, a) >= 0;
+    public static bool IsOpacity(string? o) => o is "lo" or "md" or "hi";
 
     public const int Segments = 16;
     public const int FeedSlots = 5;

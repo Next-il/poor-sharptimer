@@ -43,6 +43,7 @@ public sealed class HudConfig
     public bool ShowWorldRecord { get; set; }
 
     // ------------------------------------------------------------------ chat lines the HUD replaces
+    // The first three are the defaults of the player's own Chat tab in !hud; each player can change theirs.
 
     /// <summary>Keep the 3 split lines per stage or checkpoint in chat too.</summary>
     public bool SplitsInChat { get; set; }
@@ -65,6 +66,10 @@ public sealed class HudConfig
 
     /// <summary>The speed bar's full scale, u/s.</summary>
     public int SpeedBarMax { get; set; } = 3500;
+
+    /// <summary>Until a player has opened !hud once: "!HUD SETTINGS" on the card in the start zone, and one chat
+    /// line a little after they join.</summary>
+    public bool SettingsHint { get; set; } = true;
 
     /// <summary>What a player who never opened !hud gets.</summary>
     public HudDefaults Defaults { get; set; } = new();
@@ -108,20 +113,45 @@ public sealed class HudConfig
     }
 }
 
+/// <summary>What a player who never changed an option gets, per option. Spots: tl tc tr ml xa xu mr bc br rw
+/// (rw = the right side above the weapon list). Sizes: s m l. The chat options' defaults are SplitsInChat,
+/// StartSpeedInChat and RecordsInChat above.</summary>
 public sealed class HudDefaults
 {
+    // ---- layout
     public string Card { get; set; } = "bc";
     public string CardSize { get; set; } = "m";
-    /// <summary>A spot, or "nx" for next to the card.</summary>
+    /// <summary>The speed readout: a spot, or "nx" for next to the card. Named Cluster from when speed and keys
+    /// were one part, so a hud.json from then keeps working.</summary>
     public string Cluster { get; set; } = "xu";
     public string ClusterSize { get; set; } = "m";
+    /// <summary>The keys: a spot. Right side above the weapon list by default (owner, 11-23).</summary>
+    public string Keys { get; set; } = "rw";
+    public string KeysSize { get; set; } = "m";
+    /// <summary>"grid" or "row".</summary>
+    public string KeysLayout { get; set; } = "grid";
     /// <summary>A spot, or "card" for with the card.</summary>
     public string Toast { get; set; } = "card";
     public string ToastSize { get; set; } = "m";
     public string Feed { get; set; } = "tr";
     public string FeedSize { get; set; } = "m";
+
+    // ---- show / hide (the timer HUD, keys and splits switches stay !hud on|off, !keys and !splits)
+    public bool CardOn { get; set; } = true;
     public bool Speed { get; set; } = true;
-    /// <summary>"grid" or "row".</summary>
-    public string KeysLayout { get; set; } = "grid";
+    public bool SpeedBar { get; set; } = true;
+    public bool Sync { get; set; } = true;
+    /// <summary>PB and SR on the card.</summary>
+    public bool Compare { get; set; } = true;
+    public bool Rank { get; set; } = true;
     public bool FeedOn { get; set; } = true;
+
+    // ---- style
+    /// <summary>ice, orange, pink, lime or white.</summary>
+    public string Accent { get; set; } = "ice";
+    public bool CompactCard { get; set; }
+    /// <summary>Background: "lo" (light), "md" (today) or "hi" (solid).</summary>
+    public string Opacity { get; set; } = "md";
+    /// <summary>s, m or l, on top of each part's size.</summary>
+    public string TextSize { get; set; } = "m";
 }

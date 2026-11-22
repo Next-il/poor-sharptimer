@@ -475,7 +475,7 @@ namespace SharpTimer
             Utils.LogDebug($"Hide Chat Speed set to: {playerTimers[slot].HideChatSpeed} for {playerName}");
         }
 
-        [ConsoleCommand("css_hud", "Opens the HUD settings (where each part goes). !hud on / !hud off draws or hides the timer HUD")]
+        [ConsoleCommand("css_hud", "Opens the timer HUD settings (layout, show / hide, style, chat). !hud on / !hud off draws or hides the timer HUD")]
         [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
         public void HUDSwitchCommand(CCSPlayerController? player, CommandInfo command)
         {
@@ -488,7 +488,7 @@ namespace SharpTimer
 
             Utils.LogDebug($"{playerName} calling css_hud...");
 
-            // The Panorama HUD: plain !hud opens the placement menu. Without it (or when the menu cannot reach the
+            // The Panorama HUD: plain !hud opens the settings. Without it (or when the menu cannot reach the
             // player) !hud toggles the timer HUD as it always did; "on" and "off" set it either way.
             var arg = command.ArgCount > 1 ? command.GetArg(1).Trim().ToLowerInvariant() : "";
             if (arg.Length == 0 && HudMenuPanel != null && HudOpenMenu(player))
@@ -517,6 +517,25 @@ namespace SharpTimer
                 bool playerValid = IsAllowedPlayer(player);
                 _ = Task.Run(async () => await SetPlayerStats(player, steamID, playerName, slot, playerValid));
             }
+        }
+
+        // !timer would be the obvious third alias, but css_timer is SharpTimer's own stop-the-timer command.
+        [ConsoleCommand("css_settings", "Opens the timer HUD settings (same as !hud)")]
+        [ConsoleCommand("css_hudsettings", "Opens the timer HUD settings (same as !hud)")]
+        [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
+        public void HUDSettingsCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!IsPlayerOrSpectator(player))
+                return;
+
+            Utils.LogDebug($"{player!.PlayerName} calling css_settings...");
+
+            if (HudMenuPanel != null && HudOpenMenu(player))
+                return;
+
+            // No Panorama HUD for this player: the chat switches are all there is.
+            Utils.PrintToChat(player, $"Timer HUD: {primaryChatColor}!hud on{ChatColors.Default} / {primaryChatColor}!hud off{ChatColors.Default}, " +
+                                      $"{primaryChatColor}!keys{ChatColors.Default}, {primaryChatColor}!splits{ChatColors.Default}");
         }
 
         [ConsoleCommand("css_keys", "Draws/Hides HUD Keys")]

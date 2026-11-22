@@ -5,8 +5,8 @@ Writes the SharpTimer Panorama layouts and the generated half of their styleshee
     python3 -I hud/tools/gen_layouts.py
 
 Outputs (all under hud/panorama/):
-    layout/custom_game/sharptimer_hud.xml     the HUD: timer card, speed + keys, toast, records feed
-    layout/custom_game/sharptimer_menu.xml    the !hud settings menu with the mini map
+    layout/custom_game/sharptimer_hud.xml     the HUD: timer card, speed, keys, toast, records feed
+    layout/custom_game/sharptimer_menu.xml    !hud: the settings panel (layout, show / hide, style, chat, reset)
     styles/custom_game/sharptimer_hud.css     everything below the GENERATED marker is rewritten
     styles/custom_game/sharptimer_menu.css    same
 
@@ -24,23 +24,27 @@ MARK = "/* ===== GENERATED below by hud/tools/gen_layouts.py - edit the script, 
 # ---------------------------------------------------------------------------------------------- geometry
 # Every spot is clear of CS2's own HUD on a 16:9 screen: radar + money (top left, to y 330), score
 # (top center, to y 70), kill feed (top right, from y 74), chat (bottom left, from about y 620), HP and
-# ammo (bottom corners, from y 1000) and the spectator bar (bottom center, from y 990).
+# ammo (bottom corners, from y 1000), the weapon list (right, stacked up from the ammo: about y 880 with a
+# knife and a pistol, y 750 with a full loadout) and the spectator bar (bottom center, from y 990).
 POSITIONS = [
-    # id    label                   h        v        x     y     ty
-    ("tl", "Top left",              "left",   "top",    18,  352,   0),   # under the radar and money
-    ("tc", "Top center",            "center", "top",     0,   80,   0),   # under the score
-    ("tr", "Top right",             "right",  "top",    16,  158,   0),   # under the kill feed
-    ("ml", "Middle left",           "left",   "center", 380,   0, -30),
-    ("xa", "Above the crosshair",   "center", "bottom",  0,  586,   0),   # bottom edge at y 494
-    ("xu", "Under the crosshair",   "center", "top",     0,  586,   0),   # 46px under the crosshair
-    ("mr", "Middle right",          "right",  "center", 380,   0, -30),
-    ("bc", "Bottom center",         "center", "bottom",  0,  118,   0),   # clears the spectator bar
-    ("br", "Bottom right",          "right",  "bottom", 16,   96,   0),   # above the ammo
+    # id    label                        h        v        x     y     ty
+    ("tl", "Top left",                   "left",   "top",    18,  352,   0),   # under the radar and money
+    ("tc", "Top center",                 "center", "top",     0,   80,   0),   # under the score
+    ("tr", "Top right",                  "right",  "top",    16,  158,   0),   # under the kill feed
+    ("ml", "Middle left",                "left",   "center", 380,   0, -30),
+    ("xa", "Above the crosshair",        "center", "bottom",  0,  586,   0),   # bottom edge at y 494
+    ("xu", "Under the crosshair",        "center", "top",     0,  586,   0),   # 46px under the crosshair
+    ("mr", "Middle right",               "right",  "center", 380,   0, -30),
+    ("bc", "Bottom center",              "center", "bottom",  0,  118,   0),   # clears the spectator bar
+    ("br", "Bottom right",               "right",  "bottom", 16,   96,   0),   # above the ammo
+    ("rw", "Right, above the weapons",   "right",  "bottom", 16,  340,   0),   # bottom edge at y 740
 ]
 POS_IDS = [p[0] for p in POSITIONS]
 SIZES = [("s", 0.85), ("m", 1.0), ("l", 1.15)]
 CARD_W, CARD_H = 372, 110          # the card alone; the toast slot adds 36 above or below
-CLUSTER_W, CLUSTER_H = 174, 165    # fixed width: speed box and key grid are centered in it
+CARD_W_C, CARD_H_C = 300, 92       # the compact card
+SPEED_W, SPEED_H = 174, 74         # fixed width: the speed box is centered in it
+KEYS_W, KEYS_H = 102, 96           # W / A S D / DUCK JUMP, 30px keys
 TOAST_H = 30
 FEED_W, FEED_H = 400, 170          # five 30px rows with 4px gaps, widest expected row
 GAP = 12
@@ -49,9 +53,6 @@ SEGMENTS = 16
 FEED_SLOTS = 5
 STEPS = 50                         # bar ladders p0..p50, 2% a step
 KEYS = [("w", "W", ""), ("a", "A", ""), ("s", "S", ""), ("d", "D", ""), ("e", "E", "k-e"), ("c", "DUCK", "wide"), ("j", "JUMP", "wide")]
-RANK_ICONS = ["unranked", "bronze", "silver1", "silver2", "silver3", "gold1", "gold2", "gold3", "plat1", "plat2", "plat3",
-              "dia1", "dia2", "dia3", "master1", "master2", "master3", "legend1", "legend2", "legend3", "royal1", "royal2",
-              "royal3", "god"]
 # CounterStrikeSharp chat colour tokens a ranks.json can use, as the HUD colour of the rank name.
 RANK_COLORS = {
     "default": "#c4c9cf", "white": "#e8ebee", "darkred": "#d23b3b", "green": "#4fd17f", "lightyellow": "#f3e7a2",
@@ -60,6 +61,32 @@ RANK_COLORS = {
     "blue": "#62c4ff", "darkblue": "#4b6fe0", "bluegrey": "#9fb4c8", "magenta": "#e05ad1", "lightred": "#ff7a7a",
     "orange": "#f39a3a",
 }
+
+# ---------------------------------------------------------------------------------------------- style options
+# The accent: the running card's edge, icon and lead, the style chip, the toast's key, the start chip and the
+# start-speed marker. Results keep their own colours (PB gold, SR violet, ahead green, behind red).
+ACCENTS = [("ice", "ICE", "#62c4ff"), ("orange", "ORANGE", "#f7783c"), ("pink", "PINK", "#ff6fae"),
+           ("lime", "LIME", "#a2e05a"), ("white", "WHITE", "#e8ebee")]
+# Background alpha of every HUD panel: light / normal (today) / solid.
+OPACITY = {
+    "lo": {"tc": ("80", "8c"), "sc": "66", "k": "70", "ts": "99", "fd": "8c"},
+    "md": {"tc": ("c6", "d0"), "sc": "9e", "k": "a6", "ts": "cc", "fd": "c4"},
+    "hi": {"tc": ("ee", "f2"), "sc": "e0", "k": "e0", "ts": "f0", "fd": "ee"},
+}
+OPACITY_NAMES = [("lo", "LIGHT"), ("md", "NORMAL"), ("hi", "SOLID")]
+TEXT_SCALE = {"s": 0.88, "l": 1.15}
+# Every label's font size: (selector, full card, compact card). None = the compact card does not change it.
+TEXT = [
+    (".tc-time", 40, 32), (".tc-lead", 9.5, 9), (".tc-who", 9.5, 9), (".tc-map", 9.5, None), (".chip", 8.5, 8),
+    (".tc-stv", 19, 16), (".tc-stk", 8.5, 8), (".tc-place", 10.5, 10), (".tc-diff", 21, 17),
+    (".cmp-k", 8.5, 8), (".cmp-v", 10.5, 10), (".cmp-by", 12.5, 11.5), (".tc-rank", 12.5, 11.5),
+    (".tc-rest", 12, 11), (".tc-pts", 12, 11),
+    (".sc-num", 29, None), (".sc-unit", 9, None), (".sc-sk", 9, None), (".sc-sv", 9, None), (".sc-chip", 9.5, None),
+    (".k-l", 14, None), (".k.wide .k-l", 10, None), (".ks.v-row .k-l", 12, None), (".ks.v-row .k.wide .k-l", 8.5, None),
+    (".ts-k", 9.5, None), (".ts-t", 15, None), (".ts-dv", 12, None), (".ts-ds", 8, None), (".ts-v", 10.5, None),
+    (".ts-vd", 10.5, None), (".ts-mb", 15, None), (".ts-m", 15, None),
+    (".fd-n", 16, None), (".fd-tag", 8.5, None), (".fd-t", 13, None), (".fd-d", 10.5, None),
+]
 
 
 def px(v):
@@ -83,15 +110,23 @@ def anchor_css(h, v, x, y, ty, k=1.0, tx=0.0):
     return " ".join(out)
 
 
-def beside(pos, card_scale, cluster_scale, k=1.0):
-    """The speed + keys cluster next to the card: on the side that faces the middle of the screen."""
+def beside(pos, card_w, speed_scale, k=1.0):
+    """The speed readout next to the card: on the side that faces the middle of the screen."""
     _, _, h, v, x, y, ty = next(p for p in POSITIONS if p[0] == pos)
-    cw = CARD_W * card_scale
     if h == "left":
-        return anchor_css("left", v, x + cw + GAP, y, ty, k)
+        return anchor_css("left", v, x + card_w + GAP, y, ty, k)
     if h == "right":
-        return anchor_css("right", v, x + cw + GAP, y, ty, k)
-    return anchor_css("center", v, 0, y, ty, k, tx=cw / 2 + GAP + CLUSTER_W * cluster_scale / 2)
+        return anchor_css("right", v, x + card_w + GAP, y, ty, k)
+    return anchor_css("center", v, 0, y, ty, k, tx=card_w / 2 + GAP + SPEED_W * speed_scale / 2)
+
+
+def beside_classes():
+    """(class, css args) for every speed-next-to-the-card spot: nx- with the full card, nxc- with the compact one."""
+    for prefix, w in (("nx", CARD_W), ("nxc", CARD_W_C)):
+        for pid in POS_IDS:
+            for cs, cv in SIZES:
+                for ss, sv in SIZES:
+                    yield f"{prefix}-{pid}-{cs}-{ss}", (pid, w * cv, sv)
 
 
 # ---------------------------------------------------------------------------------------------- XML helpers
@@ -132,20 +167,17 @@ def toast(id_, extra=""):
 
 
 def hud_xml():
-    keys_rows = [
+    speed = P("sc", "sc", P("sc_box", "sc-box", "".join([
+        P(cls="sc-top", children=L("{s:sp_val}", "sc-num", "sp_num") + L("U/S", "sc-unit")),
+        P("sp_bar", "sc-bar", P("sp_fill", "sc-fill p0") + P("sp_cap", "sc-cap cap-5")),
+        P(cls="sc-sub", children=L("PRE", "sc-sk") + L("{s:sp_pre}", "sc-sv")
+          + L("SYNC", "sc-sk sc-sync") + L("{s:sp_sync}", "sc-sv sc-sync")),
+        L("{s:sc_chip}", "sc-chip"),
+    ])))
+    keys = P("ks", "ks", "".join([
         P(cls="ks-row", children=P("k_w", "k", L("W", "k-l"))),
         P(cls="ks-row", children="".join(P(f"k_{k}", f"k {c}".strip(), L(t, "k-l")) for k, t, c in KEYS[1:5])),
         P(cls="ks-row", children="".join(P(f"k_{k}", f"k {c}".strip(), L(t, "k-l")) for k, t, c in KEYS[5:])),
-    ]
-    cluster = P("sc", "sc", "".join([
-        P("sc_box", "sc-box", "".join([
-            P(cls="sc-top", children=L("{s:sp_val}", "sc-num", "sp_num") + L("U/S", "sc-unit")),
-            P("sp_bar", "sc-bar", P("sp_fill", "sc-fill p0") + P("sp_cap", "sc-cap cap-5")),
-            P(cls="sc-sub", children=L("PRE", "sc-sk") + L("{s:sp_pre}", "sc-sv")
-              + L("SYNC", "sc-sk sc-sync") + L("{s:sp_sync}", "sc-sv sc-sync")),
-            L("{s:sc_chip}", "sc-chip"),
-        ])),
-        P("ks", "ks", "".join(keys_rows)),
     ]))
 
     segs = "".join(P(f"sg{i}", "sg") for i in range(SEGMENTS))
@@ -157,6 +189,7 @@ def hud_xml():
             L("{s:tc_map}", "tc-map"),
             L("{s:c_style}", "chip c-style"),
             L("{s:c_mode}", "chip c-mode"),
+            L("!HUD SETTINGS", "chip c-hint"),
         ])),
         P(cls="tc-main", children="".join([
             L("{s:tc_time}", "tc-time", "tc_time"),
@@ -187,8 +220,10 @@ def hud_xml():
         return P(f"fd{n}", "fd-slot hidden", row)
 
     groups = "\n".join([
-        "<!-- speed + keys -->",
-        P("st_cl", "st-pos p-xu", P("st_cl_sz", "st-sz sz-m", cluster)),
+        "<!-- speed -->",
+        P("st_sp", "st-pos p-xu", P("st_sp_sz", "st-sz sz-m", speed)),
+        "<!-- keys -->",
+        P("st_ks", "st-pos p-rw", P("st_ks_sz", "st-sz sz-m", keys)),
         "<!-- toast (splits and replies) above or under the card, then the card -->",
         P("st_cg", "st-pos p-bc", P("st_cg_sz", "st-sz sz-m",
             P("st_cg_in", "cg-in", toast("tu", "ts-up") + card + toast("td", "ts-dn hidden")))),
@@ -197,9 +232,10 @@ def hud_xml():
         "<!-- other players' records -->",
         P("st_fd", "st-pos p-tr", P("st_fd_sz", "st-sz sz-m", P("fd", "fd", "".join(feed_slot(n) for n in range(FEED_SLOTS))))),
     ])
-    groups = groups.replace("><", ">\n<")
+    skin = P("st_skin", "st-skin ac-ice op-md tx-m", groups.replace("><", ">\n<"))
 
-    pos_list = " ".join(POS_IDS)
+    pos_list = "|".join(POS_IDS)
+    accents = "|".join(a for a, _, _ in ACCENTS)
     head = f"""<root>
 	<styles>
 		<include src="s2r://panorama/styles/custom_game/hud_shared.vcss_c" />
@@ -208,8 +244,8 @@ def hud_xml():
 
 	<!--
 		SharpTimer HUD - generated by hud/tools/gen_layouts.py. Driven by src/Hud/TimerHud.cs.
-		Replaces the center HTML: timer card, speed + keys, one toast slot for splits and replies, and a
-		feed of other players' records. Every group sits wherever the player put it with !hud.
+		Replaces the center HTML: timer card, speed, keys, one toast slot for splits and replies, and a
+		feed of other players' records. Every part sits wherever the player put it with !hud.
 
 		CONTRACT
 		  RootPanelId = "StHudRoot"   RevealClass = "show"   RowCount = 0
@@ -217,10 +253,13 @@ def hud_xml():
 
 		NOT INTERACTIVE. hittest false everywhere.
 
-		PLACEMENT (one-of classes on the group's outer panel; size on the _sz panel)
-		  st_cg st_cl st_tf st_fd   p-{{{pos_list.replace(' ', '|')}}}
-		  st_cl                     nx-<cardpos>-<cardsize>-<clustersize>   next to the card
-		  st_cg_sz st_cl_sz st_tf_sz st_fd_sz   sz-s | sz-m | sz-l   (ui-scale 85 / 100 / 115%)
+		STYLE (one-of classes on st_skin, which holds every part)
+		  ac-{{{accents}}}   op-lo|op-md|op-hi   tx-s|tx-m|tx-l   cc (compact card)
+
+		PLACEMENT (one-of classes on the part's outer panel; size on the _sz panel)
+		  st_cg st_sp st_ks st_tf st_fd   p-{{{pos_list}}}
+		  st_sp                     nx-<cardpos>-<cardsize>-<speedsize> (nxc- with the compact card)   next to the card
+		  st_cg_sz st_sp_sz st_ks_sz st_tf_sz st_fd_sz   sz-s | sz-m | sz-l   (ui-scale 85 / 100 / 115%)
 
 		DIALOG VARIABLES
 		  sp_val sp_pre sp_sync sc_chip
@@ -230,12 +269,12 @@ def hud_xml():
 		  fdN_n fdN_tag fdN_t fdN_d   N = 0..{FEED_SLOTS - 1}
 
 		CLASSES THE SERVER TOGGLES
-		  sc        show zone flash capped vc nospeed nobar nosync nokeys
+		  sc        show zone flash capped vc nobar nosync
 		  sp_num    v0..v10         sp_fill  p0..p{STEPS}     sp_cap  cap-0..cap-{STEPS}
-		  ks        v-row chute     k_w k_a k_s k_d k_e k_c k_j   on no
+		  ks        show v-row chute     k_w k_a k_s k_d k_e k_c k_j   on no
 		  tc        show st-start|st-idle|st-run|st-done|st-pb|st-sr|st-cancel|st-replay
-		            spec bonus rp-pb nosr nopb noseg noplace nostage nostyle nomode lead-empty who-empty
-		            diff-ahead diff-behind rk-icon rk-text pts
+		            spec bonus rp-pb nosr nopb nocmp noseg noplace nostage nostyle nomode lead-empty who-empty
+		            diff-ahead diff-behind rk-icon rk-text pts hint
 		  tc_time   pop-a pop-b     tc_rank  rc-<chat colour>   tc_ricon  ri-<icon>
 		  sg0..sg{SEGMENTS - 1}  x cur ahead behind done        tc_prog  p0..p{STEPS}
 		  tu td tf  show re-a re-b k-split k-msg err hidden d1-ahead d1-behind d1-off d2-ahead d2-behind d2-off
@@ -250,59 +289,119 @@ def hud_xml():
 	</Panel>
 </root>
 """
-    return head + indent(groups, 3) + tail
+    return head + indent(skin, 3) + tail
 
 
 # ---------------------------------------------------------------------------------------------- menu layout
-GROUPS = [("card", "TIMER CARD"), ("cl", "SPEED AND KEYS"), ("ts", "SPLITS"), ("fd", "RECORDS FEED")]
+TABS = ["LAYOUT", "SHOW / HIDE", "STYLE", "CHAT", "RESET"]
+PARTS = [("card", "TIMER CARD", "TIMER"), ("sp", "SPEED", "SPEED"), ("ks", "KEYS", "KEYS"), ("ts", "SPLITS AND REPLIES", "SPLITS"),
+         ("fd", "RECORDS FEED", "RECORDS")]
+# Show / hide: (key, name, what it is), two columns.
+SHOW = [
+    [("hud", "TIMER HUD", "Card and speed. Same as !hud on / off."),
+     ("card", "TIMER CARD", "Time, stage, place and the split bar."),
+     ("cmp", "PB AND SR", "Your best and the server record."),
+     ("rank", "RANK", "Your rank name on the card."),
+     ("toast", "SPLIT TOAST", "Stage and checkpoint times. Same as !splits.")],
+    [("speed", "SPEED", "Your speed in u/s."),
+     ("bar", "SPEED BAR", "The bar under the number."),
+     ("sync", "SYNC", "Strafe sync, next to pre."),
+     ("keys", "KEYS", "The keys you press. Same as !keys."),
+     ("feed", "RECORDS FEED", "Other players' finishes, PBs and records.")],
+]
 
 
-def opt_row(key, desc, opts, id_=None):
+def opt_row(key, desc, opts, id_=None, row_id=None, cls="se-row"):
     buttons = "".join(B(oid, "se-opt", L(text, "se-opt-lbl")) for oid, text in opts)
-    return P(cls="se-row", children=L(key, "se-k") + (L(desc, "se-d") if desc else "") + P(id_, "se-opts", buttons))
+    return P(row_id, cls, L(key, "se-k") + (L(desc, "se-d") if desc else "") + P(id_, "se-opts", buttons))
+
+
+def onoff(prefix, on="ON", off="OFF"):
+    return [(f"{prefix}_on", on), (f"{prefix}_off", off)]
 
 
 def menu_xml():
-    tabs = "".join(B(f"mg_{i}", "sm-tab", L(t, "sm-tab-lbl")) for i, (_, t) in enumerate(GROUPS)) + P("sm_bar", "sm-bar at-0")
-    stand_in = "".join(P(cls=f"mm-cs mm-{n}") for n in ["radar", "money", "score", "kill", "chat", "hp", "ammo", "x"])
-    blocks = "".join([
-        P("mb_fd", "mm-blk mm-fd p-tr sz-m", L("RECORDS", "mm-blk-l")),
-        P("mb_ts", "mm-blk mm-ts wc-bc-m sz-m", L("SPLITS", "mm-blk-l")),
-        P("mb_card", "mm-blk mm-card p-bc sz-m sel", L("TIMER", "mm-blk-l")),
-        P("mb_cl", "mm-blk mm-cl p-xu sz-m", L("SPEED", "mm-blk-l")),
-    ])
+    tabs = "".join(B(f"mg_{i}", "sm-tab", L(t, "sm-tab-lbl")) for i, t in enumerate(TABS)) + P("sm_bar", "sm-bar at-0")
+
+    # ---------------------------------------------------------------- 0: layout
+    stand_in = "".join(P(cls=f"mm-cs mm-{n}") for n in ["radar", "money", "score", "kill", "chat", "hp", "ammo", "weap", "x"])
+    start = {"card": " p-bc sel", "sp": " p-xu", "ks": " p-rw", "ts": " wc-bc-m", "fd": " p-tr"}
+    blocks = "".join(P(f"mb_{g}", f"mm-blk mm-{g} sz-m" + start[g], L(short, "mm-blk-l"))
+                     for g, _, short in [PARTS[4], PARTS[3], PARTS[0], PARTS[1], PARTS[2]])
     zones = "".join(B(f"mz_{p}", f"mm-z z-{p}", P(cls="mm-z-in")) for p in POS_IDS)
     left = P(cls="sm-left", children="".join([
         P(cls="sm-lhead", children=L("WHERE IT GOES", "sm-k") + P(cls="fill") + L("{s:sm_where}", "sm-where")),
         P("mm", "mm", stand_in + blocks + zones),
-        P(cls="sm-with", children=B("mz_with", "se-opt sm-with-btn", L("{s:sm_with}", "se-opt-lbl")) + L("Click a spot on the screen to move it.", "sm-hint")),
+        P(cls="sm-with", children=B("mz_with", "se-opt sm-with-btn", L("{s:sm_with}", "se-opt-lbl"))
+          + L("Pick a part, then click a spot on the screen.", "sm-hint")),
     ]))
-    sizes = opt_row("SIZE", "", [("ms_s", "S"), ("ms_m", "M"), ("ms_l", "L")], "ms_opts")
-    pages = "".join([
-        P("mp_0", "sm-page", opt_row("TIMER HUD", "The card, speed and keys. Same as !hud on and !hud off.", [("mo_hud_on", "ON"), ("mo_hud_off", "OFF")])),
-        P("mp_1", "sm-page", opt_row("SPEED", "Speed, pre and sync.", [("mo_spd_on", "ON"), ("mo_spd_off", "OFF")])
-          + opt_row("KEYS", "Same as !keys.", [("mo_keys_on", "ON"), ("mo_keys_off", "OFF")])
-          + opt_row("KEYS LAYOUT", "", [("mo_kl_grid", "GRID"), ("mo_kl_row", "ONE ROW")])),
-        P("mp_2", "sm-page", opt_row("SPLITS", "Stage and checkpoint times. Same as !splits.", [("mo_spl_on", "ON"), ("mo_spl_off", "OFF")])),
-        P("mp_3", "sm-page", opt_row("RECORDS FEED", "Other players' finishes, PBs and records.", [("mo_feed_on", "ON"), ("mo_feed_off", "OFF")])),
-    ])
-    right = P(cls="sm-right", children=sizes + pages)
+    parts = "".join(B(f"lp_{g}", "lp", L(name, "lp-n") + L(f"{{s:lp_{g}_w}}", "lp-w")) for g, name, _ in PARTS)
+    right = P(cls="sm-right", children="".join([
+        L("PART", "sm-k lp-head"),
+        parts,
+        opt_row("SIZE", "", [("ms_s", "S"), ("ms_m", "M"), ("ms_l", "L")], "ms_opts", cls="se-row lo-row"),
+        opt_row("KEYS LAYOUT", "", [("mo_kl_grid", "GRID"), ("mo_kl_row", "ONE ROW")], row_id="lo_kl", cls="se-row lo-row hidden"),
+    ]))
+    page_layout = P("mp_0", "sm-page pg-cols", left + right)
+
+    # ---------------------------------------------------------------- 1: show / hide
+    def vh_row(key, name, desc):
+        txt = P(cls="vh-txt", children=L(name, "se-k") + L(desc, "se-d"))
+        opts = P(cls="se-opts vh-opts", children="".join(B(oid, "se-opt", L(t, "se-opt-lbl")) for oid, t in onoff(f"vo_{key}")))
+        return P(f"vr_{key}", "vh-row", txt + opts)
+    cols = "".join(P(cls=f"vh-col vh-col{i}", children="".join(vh_row(*r) for r in col)) for i, col in enumerate(SHOW))
+    page_show = P("mp_1", "sm-page pg-cols", cols)
+
+    # ---------------------------------------------------------------- 2: style
+    accent_btns = "".join(B(f"ss_ac_{a}", "se-opt sw-opt", P(cls=f"sw sw-{a}") + L(label, "se-opt-lbl")) for a, label, _ in ACCENTS)
+    accent = P(cls="se-row", children=L("ACCENT", "se-k") + L("The running card, the toast and the start chip.", "se-d")
+               + P(cls="se-opts", children=accent_btns))
+    style_l = P(cls="st-col st-col0", children=
+                opt_row("TIMER CARD", "Compact drops the map name and shrinks the clock.", [("ss_cc_full", "FULL"), ("ss_cc_compact", "COMPACT")])
+                + opt_row("TEXT SIZE", "On top of each part's size.", [("ss_tx_s", "S"), ("ss_tx_m", "M"), ("ss_tx_l", "L")]))
+    style_r = P(cls="st-col st-col1", children=
+                opt_row("BACKGROUND", "How much of the game shows through.", [(f"ss_op_{k}", n) for k, n in OPACITY_NAMES]))
+    page_style = P("mp_2", "sm-page pg-reset", accent + P(cls="st-cols", children=style_l + style_r)
+                   + L("Changes show on the HUD behind this menu.", "rs-note st-note"))
+
+    # ---------------------------------------------------------------- 3: chat
+    chat_l = P(cls="st-col st-col0", children=
+               opt_row("SPLITS", "Stage and checkpoint times. !splits turns them off and on.",
+                       [("ch_spl_off", "OFF"), ("ch_spl_hud", "HUD"), ("ch_spl_chat", "HUD + CHAT")])
+               + opt_row("KEYS", "The keys you press, on screen. Same as !keys.", onoff("ch_keys")))
+    chat_r = P(cls="st-col st-col1", children=
+               opt_row("SPEED IN CHAT", "Start speed: 352 when you leave the zone. The HUD shows it under the speed either way.",
+                       [("ch_ss_off", "OFF"), ("ch_ss_on", "ON")])
+               + opt_row("FINISH MESSAGES", "Finishes, PBs and records in chat, yours and others'. The HUD shows them either way.",
+                         [("ch_fin_off", "OFF"), ("ch_fin_on", "ON")]))
+    page_chat = P("mp_3", "sm-page pg-cols", chat_l + chat_r)
+
+    # ---------------------------------------------------------------- 4: reset
+    page_reset = P("mp_4", "sm-page pg-reset", "".join([
+        opt_row("RESET THE LAYOUT", "Every part back to its default spot and size.", [("rs_layout", "RESET LAYOUT")]),
+        opt_row("RESET EVERYTHING", "Layout, show and hide, style and chat, with !hud, !keys and !splits back on.", [("rs_all", "RESET EVERYTHING")]),
+        L("{s:rs_msg}", "rs-msg"),
+        L("Your settings are saved and follow you to every timer server.", "rs-note"),
+    ]))
+
+    pages = page_layout + page_show + page_style + page_chat + page_reset
     foot = "".join([
-        B("m_reset", "sm-reset", L("RESET ALL", "sm-reset-lbl")),
-        P(cls="fill"),
-        L("!hud", "sm-cmd"), L("THIS MENU", "sm-foot-t"),
+        L("!hud", "sm-cmd"), L("!settings", "sm-cmd sm-cmd2"), L("THIS MENU", "sm-foot-t"),
+        L("!hud on|off", "sm-cmd"), L("TIMER HUD", "sm-foot-t"),
         L("!keys", "sm-cmd"), L("KEYS", "sm-foot-t"),
         L("!splits", "sm-cmd"), L("SPLITS", "sm-foot-t"),
     ])
     body = "\n".join([
         P(cls="hud-head", hit=True, children="".join([
-            L("TIMER HUD", "hud-title sm-title"), L("{s:sm_tag}", "hud-tag sm-tag"), P(cls="fill"),
+            L("TIMER SETTINGS", "hud-title sm-title"), L("{s:sm_tag}", "hud-tag sm-tag"), P(cls="fill"),
             B("sm_close", "hud-exit", L("&#x2715;", "hud-x")),
         ])),
         P(cls="sm-tabs", hit=True, children=tabs),
-        P(cls="sm-body", children=left + right),
+        P(cls="sm-body", children=pages),
         P(cls="hud-foot sm-foot", hit=True, children=foot),
     ]).replace("><", ">\n<")
+
+    show_ids = " ".join(k for col in SHOW for k, _, _ in col)
     head = f"""<root>
 	<styles>
 		<include src="s2r://panorama/styles/custom_game/hud_shared.vcss_c" />
@@ -310,27 +409,31 @@ def menu_xml():
 	</styles>
 
 	<!--
-		!hud - where each part of the timer HUD goes. Generated by hud/tools/gen_layouts.py, driven by
-		src/Hud/HudMenu.cs. The HUD itself moves behind the menu as the player clicks.
+		!hud (also !settings and !hudsettings) - the settings panel for the whole timer HUD. Generated by
+		hud/tools/gen_layouts.py, driven by src/Hud/HudMenu.cs. The HUD behind the menu follows every click.
 
 		CONTRACT
 		  RootPanelId = "StMenuRoot"   RevealClass = "show"   CloseButtonId = "sm_close"   RowCount = 0
 		  CaptureInput = true          SharedText = false
 
 		BUTTONS (PanelAction.Button, by id)
-		  mg_0..mg_3                 the part: timer card, speed and keys, splits, records feed
-		  mz_{{{"|".join(POS_IDS)}}}   put it there (the nine spots on the mini map)
-		  mz_with                    next to the card (speed and keys) / with the card (splits)
-		  ms_s ms_m ms_l             size
-		  mo_hud_on|off mo_spd_on|off mo_keys_on|off mo_kl_grid|row mo_spl_on|off mo_feed_on|off
-		  m_reset                    every option back to the server default
+		  mg_0..mg_4                 tabs: layout, show / hide, style, chat, reset
+		  lp_card lp_sp lp_ks lp_ts lp_fd   the part the layout tab moves
+		  mz_{{{"|".join(POS_IDS)}}}   put it there (the spots on the mini map)
+		  mz_with                    next to the card (speed) / with the card (splits)
+		  ms_s ms_m ms_l             size        mo_kl_grid mo_kl_row   keys layout
+		  vo_<k>_on vo_<k>_off       show / hide, k = {show_ids}
+		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l
+		  ch_spl_off|hud|chat ch_keys_on|off ch_ss_on|off ch_fin_on|off
+		  rs_layout rs_all
 
 		CLASSES THE SERVER TOGGLES
-		  mg_N mp_N active    sm_bar at-0..at-3    mz_* cur    mz_with on hidden    ms_* mo_* on
-		  mb_card mb_cl mb_ts mb_fd   p-* | nx-<pos>-<cs>-<ks> (mb_cl) | wc-<pos>-<cs> (mb_ts)   sz-s|m|l   sel off
+		  mg_N mp_N active    sm_bar at-0..at-4    mz_* cur    mz_with on hidden    lp_* on off
+		  ms_* mo_* vo_* ss_* ch_* on    ms_opts disabled    lo_kl hidden    vr_<k> disabled
+		  mb_card mb_sp mb_ks mb_ts mb_fd   p-* | nx-* nxc-* (mb_sp) | wc-* wcc-* (mb_ts)   sz-s|m|l   sel off   cc (mb_card)
 
 		DIALOG VARIABLES
-		  sm_tag sm_where sm_with
+		  sm_tag sm_where sm_with lp_card_w lp_sp_w lp_ks_w lp_ts_w lp_fd_w rs_msg
 	-->
 	<Panel class="hud-screen" hittest="false">
 		<Panel id="StMenuRoot" class="hud-root hud-card sm-root">
@@ -345,24 +448,21 @@ def menu_xml():
 
 # ---------------------------------------------------------------------------------------------- generated CSS
 def hud_css():
-    out = [MARK, "", "/* positions: one class per spot, on the group's outer panel */"]
+    out = [MARK, "", "/* positions: one class per spot, on the part's outer panel */"]
     for pid, label, h, v, x, y, ty in POSITIONS:
         out.append(f".st-pos.p-{pid} {{ {anchor_css(h, v, x, y, ty)} }}   /* {label} */")
-    out += ["", "/* speed + keys next to the card: nx-<card position>-<card size>-<cluster size> */"]
-    for pid in POS_IDS:
-        for cs, cv in SIZES:
-            for ks, kv in SIZES:
-                out.append(f".st-pos.nx-{pid}-{cs}-{ks} {{ {beside(pid, cv, kv)} }}")
+    out += ["", "/* speed next to the card: nx-<card position>-<card size>-<speed size>, nxc- next to the compact card */"]
+    for cls, (pid, cw, sv) in beside_classes():
+        out.append(f".st-pos.{cls} {{ {beside(pid, cw, sv)} }}")
     out += ["", "/* the feed lines up with its edge and slides in from it */"]
     for pid, _, h, v, *_ in POSITIONS:
-        align = h
         if h == "right":
             start = "translate3d(420px, 0px, 0px)"
         elif h == "left":
             start = "translate3d(-420px, 0px, 0px)"
         else:
             start = "translate3d(0px, -30px, 0px)" if v == "top" else "translate3d(0px, 30px, 0px)"
-        out.append(f".st-pos.p-{pid} .fd-slot {{ horizontal-align: {align}; }}")
+        out.append(f".st-pos.p-{pid} .fd-slot {{ horizontal-align: {h}; }}")
         out.append(f".st-pos.p-{pid} .fd-row {{ transform: {start}; }}")
     out.append("/* after the starts above, and more specific: a shown row is in place */")
     out.append(".st-pos .fd-slot .fd-row.show { opacity: 1; blur: gaussian(0.0); transform: translate3d(0px, 0px, 0px); }")
@@ -377,39 +477,94 @@ def hud_css():
         out.append(f".tc-rank.rc-{name} {{ color: {col}; }}")
     # No rank icon images (owner, 11-22): Workshop Tools has no standalone compiler for PNGs, so the rank
     # shows as its coloured name (RankDisplay "text"). The .tc-ricon panel stays for a later vector badge set.
+
+    out += ["", "/* ---- style: accent (ac-*). Only the running and replay card, so result colours stay their own */"]
+    for a, _, col in ACCENTS:
+        s = f".st-skin.ac-{a}"
+        out.append(f"{s} .tc.st-run, {s} .tc.st-replay {{ border-top: 2px solid {col}; }}")
+        out.append(f"{s} .tc.st-run .tc-ico, {s} .tc.st-replay .tc-ico {{ wash-color: {col}; }}")
+        out.append(f"{s} .tc.st-run .tc-lead, {s} .tc.st-replay .tc-lead {{ color: {col}; }}")
+        out.append(f"{s} .chip.c-style {{ color: {col}; background-color: {col}1f; }}")
+        out.append(f"{s} .ts-k, {s} .ts-mb {{ color: {col}; }}")
+        out.append(f"{s} .sc-chip, {s} .sc-cap, {s} .tc-pfill {{ background-color: {col}; }}")
+    out.append("/* errors and the capped start keep their colour whatever the accent */")
+    out.append(".st-skin .ts.err .ts-k, .st-skin .ts.err .ts-mb { color: #f26450; }")
+    out.append(".st-skin .sc.flash.capped .sc-chip { background-color: #f2c14e; color: #1a1405; }")
+
+    out += ["", "/* ---- style: background (op-*), every panel's fill */"]
+    for k, o in OPACITY.items():
+        s = f".st-skin.op-{k}"
+        a, b = o["tc"]
+        out.append(f"{s} .tc {{ background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171e{a}), to(#0b0f14{b})); }}")
+        out.append(f"{s} .sc-box {{ background-color: #0b0f14{o['sc']}; }}")
+        out.append(f"{s} .k {{ background-color: #0b0f14{o['k']}; }}")
+        out.append(f"{s} .ts {{ background-color: #0b0f14{o['ts']}; }}")
+        out.append(f"{s} .fd-row {{ background-color: #0b0f14{o['fd']}; }}")
+    out.append("/* pressed and blocked keys and the error toast keep their fill */")
+    out.append(".st-skin .k.no { background-color: #0b0f1459; }")
+    out.append(".st-skin .k.on { background-color: #f2f4f6; }")
+    out.append(".st-skin .k.no.on { background-color: #f26450; }")
+    out.append(".st-skin .ts.err { background-color: #2a0f0ccc; }")
+
+    out += ["", "/* ---- style: the compact card (cc) */",
+            f".st-skin.cc .tc {{ width: {CARD_W_C}px; padding: 6px 12px 8px 12px; }}",
+            ".st-skin.cc .tc-map { visibility: collapse; }",
+            ".st-skin.cc .tc-main { margin-top: 3px; }",
+            ".st-skin.cc .tc-cmp { margin-top: 6px; }",
+            ".st-skin.cc .tc-res { margin-top: 4px; }",
+            ".st-skin.cc .tc-rest { max-width: 270px; }",
+            ".st-skin.cc .tc-segs { height: 3px; margin-top: 7px; }",
+            ".st-skin.cc .tc-prog { margin-top: 7px; }",
+            ".st-skin.cc .cmp-by { max-width: 84px; }"]
+
+    out += ["", "/* ---- style: text size (tx-s / tx-l; tx-m is the sizes above) */"]
+    for t, k in TEXT_SCALE.items():
+        for sel, full, compact in TEXT:
+            out.append(f".st-skin.tx-{t} {sel} {{ font-size: {px(full * k)}; }}")
+            if compact is not None:
+                out.append(f".st-skin.cc.tx-{t} {sel} {{ font-size: {px(compact * k)}; }}")
+        out.append(f".st-skin.tx-{t} .sc-num {{ width: {px(76 * k)}; }}")
+    out.append("/* the compact card at text size M */")
+    for sel, full, compact in TEXT:
+        if compact is not None:
+            out.append(f".st-skin.cc.tx-m {sel} {{ font-size: {px(compact)}; }}")
     return "\n".join(out) + "\n"
 
 
 MAP_W, MAP_H = 448, 252
 K = MAP_W / 1920.0
-BLOCK = {"card": (CARD_W, CARD_H), "cl": (CLUSTER_W, CLUSTER_H), "ts": (400, 40), "fd": (FEED_W, FEED_H)}
+BLOCK = {"card": (CARD_W, CARD_H), "sp": (SPEED_W, SPEED_H), "ks": (KEYS_W, KEYS_H), "ts": (400, 40), "fd": (FEED_W, FEED_H)}
 
 
 def menu_css():
     out = [MARK, "", f"/* mini map: the screen at {MAP_W}x{MAP_H}, k = {K:.4f} */"]
     for pid, label, h, v, x, y, ty in POSITIONS:
         out.append(f".mm-blk.p-{pid}, .mm-z.z-{pid} {{ {anchor_css(h, v, x, y, ty, K)} }}   /* {label} */")
-    out += ["", "/* block sizes */"]
+    out += ["", "/* block sizes; the compact card (cc) on its own rows */"]
     for g, (w, hgt) in BLOCK.items():
         for s, sv in SIZES:
             out.append(f".mm-{g}.sz-{s} {{ width: {px(w * sv * K)}; height: {px(max(hgt * sv * K, 8))}; }}")
-    out += ["", "/* speed + keys next to the card */"]
-    for pid in POS_IDS:
-        for cs, cv in SIZES:
-            for ks, kv in SIZES:
-                out.append(f".mm-blk.nx-{pid}-{cs}-{ks} {{ {beside(pid, cv, kv, K)} }}")
-    out += ["", "/* the toast with the card: above it, or under it when the card hangs from the top */"]
+    for s, sv in SIZES:
+        out.append(f".mm-card.cc.sz-{s} {{ width: {px(CARD_W_C * sv * K)}; height: {px(max(CARD_H_C * sv * K, 8))}; }}")
+    out += ["", "/* speed next to the card */"]
+    for cls, (pid, cw, sv) in beside_classes():
+        out.append(f".mm-blk.{cls} {{ {beside(pid, cw, sv, K)} }}")
+    out += ["", "/* the toast with the card: above it, or under it when the card hangs from the top (wcc-: the compact card) */"]
     th = BLOCK["ts"][1] * K
-    for pid, _, h, v, x, y, ty in POSITIONS:
-        for cs, cv in SIZES:
-            ch = CARD_H * cv * K
-            if v == "top":
-                css = anchor_css(h, "top", x, 0, 0, K).replace("margin-top: 0px;", f"margin-top: {px(y * K + ch + 1)};")
-            elif v == "bottom":
-                css = anchor_css(h, "bottom", x, 0, 0, K).replace("margin-bottom: 0px;", f"margin-bottom: {px(y * K + ch + 1)};")
-            else:
-                css = anchor_css(h, "center", x, 0, 0, K) + f" transform: translate3d(0px, {px(ty * K - ch / 2 - 1 - max(th, 8) / 2)}, 0px);"
-            out.append(f".mm-blk.wc-{pid}-{cs} {{ {css} }}")
+    for prefix, card_h in (("wc", CARD_H), ("wcc", CARD_H_C)):
+        for pid, _, h, v, x, y, ty in POSITIONS:
+            for cs, cv in SIZES:
+                ch = card_h * cv * K
+                if v == "top":
+                    css = anchor_css(h, "top", x, 0, 0, K).replace("margin-top: 0px;", f"margin-top: {px(y * K + ch + 1)};")
+                elif v == "bottom":
+                    css = anchor_css(h, "bottom", x, 0, 0, K).replace("margin-bottom: 0px;", f"margin-bottom: {px(y * K + ch + 1)};")
+                else:
+                    css = anchor_css(h, "center", x, 0, 0, K) + f" transform: translate3d(0px, {px(ty * K - ch / 2 - 1 - max(th, 8) / 2)}, 0px);"
+                out.append(f".mm-blk.{prefix}-{pid}-{cs} {{ {css} }}")
+    out += ["", "/* accent swatches */"]
+    for a, _, col in ACCENTS:
+        out.append(f".sw.sw-{a} {{ background-color: {col}; }}")
     return "\n".join(out) + "\n"
 
 

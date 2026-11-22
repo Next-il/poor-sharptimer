@@ -158,15 +158,30 @@ public partial class SharpTimer
         HudReaches(player) && !(playerTimers.TryGetValue(player!.Slot, out var t) && t.HideTimerHud);
 
     /// <summary>Whether this player still gets a chat line about their own run that the HUD shows: always without
-    /// the HUD, when the panel cannot reach them or they hid the timer HUD, otherwise only when the config keeps
-    /// that line in chat.</summary>
+    /// the HUD, when the panel cannot reach them or they hid the timer HUD, otherwise only when they keep that line
+    /// in chat (their Chat tab in !hud, defaulting to hud.json).</summary>
     internal bool HudWantsChat(CCSPlayerController? player, bool keep) => keep || !HudShowsCard(player);
 
+    /// <summary>The player's HUD settings, or the server defaults before they load (or without the HUD).</summary>
+    internal HudPrefs HudPrefFor(CCSPlayerController player) =>
+        TimerHud?.PrefsOf(player) ?? HudPrefStore?.Get(player.SteamID) ?? HudPrefs.From(HudSettings);
+
+    /// <summary>The 3 split lines per stage or checkpoint, for the runner.</summary>
+    internal bool HudSplitsInChat(CCSPlayerController player) => HudWantsChat(player, HudPrefFor(player).SplitsChat);
+
+    /// <summary>"Start speed: 352", for the runner. With the HUD it follows the Chat tab only; without it, !splits
+    /// as it always did.</summary>
+    internal bool HudStartSpeedInChat(CCSPlayerController player) =>
+        HudShowsCard(player) ? HudPrefFor(player).SpeedChat : !(playerTimers.TryGetValue(player.Slot, out var t) && t.HideChatSpeed);
+
+    /// <summary>The finish, record and points lines, for one player who reads them.</summary>
+    internal bool HudFinishInChat(CCSPlayerController player) => HudWantsChat(player, HudPrefFor(player).FinishChat);
+
     /// <summary>Utils.PrintToChatAll for a finish or record line: the runner sees it on the card, everyone else in
-    /// the records feed, so it goes to whoever the HUD does not cover.</summary>
-    internal void HudPrintToChatAll(string message, bool keep, CCSPlayerController? runner = null)
+    /// the records feed, so it goes to whoever the HUD does not cover and to whoever keeps finish messages in chat.</summary>
+    internal void HudPrintToChatAll(string message, CCSPlayerController? runner = null)
     {
-        if (TimerHud == null || keep)
+        if (TimerHud == null)
         {
             Utils.PrintToChatAll(message);
             return;
@@ -176,14 +191,15 @@ public partial class SharpTimer
         {
             if (p is not { IsValid: true, IsBot: false }) continue;
             var covered = runner != null && p.Slot == runner.Slot ? HudShowsCard(p) : HudReaches(p);
-            if (!covered) p.PrintToChat($" {Localizer["prefix"]} {message}");
+            if (!covered || HudPrefFor(p).FinishChat) p.PrintToChat($" {Localizer["prefix"]} {message}");
         }
     }
 
-    /// <summary>Utils.PrintToSpec for a line the HUD shows: spectators see the runner's toast instead.</summary>
-    internal void HudPrintToSpec(CCSPlayerController target, string message, bool keep)
+    /// <summary>Utils.PrintToSpec for a line the HUD shows: spectators see the runner's toast instead, unless they
+    /// keep that line in chat (<paramref name="keep"/> reads their settings).</summary>
+    internal void HudPrintToSpec(CCSPlayerController target, string message, Func<HudPrefs, bool> keep)
     {
-        if (TimerHud == null || keep)
+        if (TimerHud == null)
         {
             Utils.PrintToSpec(target, message);
             return;
@@ -192,7 +208,8 @@ public partial class SharpTimer
         if (target == null || !target.IsValid) return;
         foreach (var spectator in Utilities.GetPlayers())
         {
-            if (spectator is not { IsValid: true } || spectator.TeamNum != (byte)CsTeam.Spectator || HudShowsCard(spectator)) continue;
+            if (spectator is not { IsValid: true } || spectator.TeamNum != (byte)CsTeam.Spectator) continue;
+            if (HudShowsCard(spectator) && !keep(HudPrefFor(spectator))) continue;
             if (spectator.Pawn.Value?.ObserverServices?.ObserverTarget.Index == target.Pawn.Index)
                 spectator.PrintToChat($"{Localizer["prefix"]} *{target.PlayerName}* - {message}");
         }
@@ -200,7 +217,7 @@ public partial class SharpTimer
 
     /// <summary>The split lines PrintToSpec copies to spectators: those the HUD reaches see the runner's toast.</summary>
     internal void HudSplitToSpec(CCSPlayerController target, string message) =>
-        HudPrintToSpec(target, message, HudSettings.SplitsInChat);
+        HudPrintToSpec(target, message, p => p.SplitsChat);
 
     // ------------------------------------------------------------------ events into the HUD
 
@@ -362,11 +379,11 @@ public partial class SharpTimer
             Utils.PrintToChat(player, Localizer["style_set", GetNamedStyle(style)]);
     }
 
-    private bool HudOpenMenu(CCSPlayerController player)
+    private bool HudOpenMenu(CCSPlayerController player, int tab = HudMenu.TabLayout)
     {
         try
         {
-            return HudMenuPanel!.Open(player);
+            return HudMenuPanel!.Open(player, tab);
         }
         catch (Exception e)
         {
