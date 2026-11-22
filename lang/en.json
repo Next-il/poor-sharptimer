@@ -149,8 +149,8 @@
 
   // Error
   "error_savingtime": "Error Saving Time: Player time is 0 ticks",
-  "error_stagenotmatchfinalone": "Error Saving Time: Player current stage does not match final one",
-  "error_checkpointnotmatchfinalone": "Error Saving Time: Player current checkpoint does not match final one{0}",
+  "error_stagenotmatchfinalone": "Time not saved: you missed a stage ({0}/{1})",
+  "error_checkpointnotmatchfinalone": "Time not saved: you missed a checkpoint ({0}/{1})",
 
   // Help Console
   "Check_console": "Check your console for a list of available commands!",

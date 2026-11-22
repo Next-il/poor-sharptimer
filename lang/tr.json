@@ -137,8 +137,8 @@
 
   //Hata
   "error_savingtime": "Zaman kaydedilirken hata: Oyuncu zamanı 0 tick",
-  "error_stagenotmatchfinalone": "Zaman kaydedilirken hata: Oyuncunun geçerli stage'i son stage ile uyuşmuyor",
-  "error_checkpointnotmatchfinalone": "Zaman kaydedilirken hata: Oyuncunun geçerli kontrol noktası son kontrol noktası ile uyuşmuyor{0}",
+  "error_stagenotmatchfinalone": "Süre kaydedilmedi: bir stage'i atladın ({0}/{1})",
+  "error_checkpointnotmatchfinalone": "Süre kaydedilmedi: bir kontrol noktasını atladın ({0}/{1})",
   
   //Yardım konsolu Yerelleştirici
   "Check_console": "Mevcut komutlar için konsolunuzu kontrol edin!",

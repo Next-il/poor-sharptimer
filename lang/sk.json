@@ -107,8 +107,8 @@
 
 	// Error
   "error_savingtime": "Napaka pri shranjevanju časa: Čas igralca je 0 tics",
-  "error_stagenotmatchfinalone": "Napaka pri shranjevanju časa: Trenutna stopnja igralca se ne ujema z zadnjo",
-  "error_checkpointnotmatchfinalone": "Napaka pri shranjevanju časa: Trenutna kontrolna točka igralca se ne ujema z zadnjo {0}",
+  "error_stagenotmatchfinalone": "Čas ni shranjen: zgrešil si stopnjo ({0}/{1})",
+  "error_checkpointnotmatchfinalone": "Čas ni shranjen: zgrešil si kontrolno točko ({0}/{1})",
 
   // help console Localizer
   "Check_console": "Preverite svojo konzolo za seznam razpoložljivih ukazov!",

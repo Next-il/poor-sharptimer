@@ -147,8 +147,8 @@
   
   // Error (报错)
   "error_savingtime": "保存时间错误：玩家时间为 0 ticks",
-  "error_stagenotmatchfinalone": "保存时间错误：玩家当前阶段与最终阶段不匹配",
-  "error_checkpointnotmatchfinalone": "保存时间错误：玩家当前检查点与最终检查点不匹配{0}",
+  "error_stagenotmatchfinalone": "时间未保存：你错过了一个阶段（{0}/{1}）",
+  "error_checkpointnotmatchfinalone": "时间未保存：你错过了一个检查点（{0}/{1}）",
 
   // Help Console (控制台项)
   "check_console": "检查你的控制台以查看可用命令列表！",

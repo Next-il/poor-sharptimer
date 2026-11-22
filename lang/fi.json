@@ -107,8 +107,8 @@
 
     // Error
     "error_savingtime": "Virhe tallentaessa aikaa: Pelaajan aika on 0 tikkiä",
-    "error_stagenotmatchfinalone": "Virhe tallentaessa aikaa: Pelaajan nykyinen vaihe ei vastaa viimeistä vaihetta",
-    "error_checkpointnotmatchfinalone": "Virhe tallentaessa aikaa: Pelaajan nykyinen tarkistuskohta ei vastaa viimeistä tarkistuspistettä {0}",
+    "error_stagenotmatchfinalone": "Aikaa ei tallennettu: ohitit vaiheen ({0}/{1})",
+    "error_checkpointnotmatchfinalone": "Aikaa ei tallennettu: ohitit tarkistuspisteen ({0}/{1})",
 
     // Help Console
     "Check_console": "Tarkista konsolisi saatavilla olevien komentojen luettelon!",

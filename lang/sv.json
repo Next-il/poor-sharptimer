@@ -111,8 +111,8 @@
 
   //Error
   "error_savingtime": "Error Saving Time: Spelartiden är 0 tick",
-  "error_stagenotmatchfinalone": "Error Saving Time: Spelarens nuvarande stadium matchar inte det sista",
-  "error_checkpointnotmatchfinalone": "Error Saving Time: Spelarens aktuella checkpoint matchar inte den sista{0}",
+  "error_stagenotmatchfinalone": "Tiden sparades inte: du missade ett stadium ({0}/{1})",
+  "error_checkpointnotmatchfinalone": "Tiden sparades inte: du missade en checkpoint ({0}/{1})",
 
   //help console Localizer
   "Check_console": "Kolla din konsol för en lista över tillgängliga kommandon!",

@@ -132,8 +132,8 @@
 	
 	// Error
   "error_savingtime": "Feil ved lagring av tid: Spillerens tid er 0 ticks",
-  "error_stagenotmatchfinalone": "Feil ved lagring av tid: Spillerens nåværende nivå stemmer ikke overens med siste nivå",
-  "error_checkpointnotmatchfinalone": "Feil ved lagring av tid: Spillerens nåværende sjekkpunkt stemmer ikke overens med siste sjekkpunkt {0}",
+  "error_stagenotmatchfinalone": "Tiden ble ikke lagret: du gikk glipp av et nivå ({0}/{1})",
+  "error_checkpointnotmatchfinalone": "Tiden ble ikke lagret: du gikk glipp av et sjekkpunkt ({0}/{1})",
 
   // Help Console
   "check_console": "Sjekk konsollen din for en liste over tilgjengelige kommandoer!",

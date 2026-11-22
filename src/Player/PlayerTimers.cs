@@ -89,7 +89,7 @@ namespace SharpTimer
                 if (playerTimer.CurrentMapStage != stageTriggerCount && currentMapOverrideStageRequirement == true)
                 {
                     HudCancelled(player, $"Missed a stage: {playerTimer.CurrentMapStage}/{stageTriggerCount}");
-                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone"]}({stageTriggerCount})");
+                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone", playerTimer.CurrentMapStage, stageTriggerCount]}");
                     Utils.LogDebug($"Player current stage: {playerTimers[slot].CurrentMapStage}; Final checkpoint: {stageTriggerCount}");
                     playerTimer.IsTimerRunning = false;
                     playerTimer.IsRecordingReplay = false;
@@ -99,7 +99,7 @@ namespace SharpTimer
                 if (playerTimer.CurrentMapCheckpoint != cpTriggerCount && useCheckpointVerification)
                 {
                     HudCancelled(player, $"Missed a checkpoint: {playerTimer.CurrentMapCheckpoint}/{cpTriggerCount}");
-                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone"]}({cpTriggerCount})");
+                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone", playerTimer.CurrentMapCheckpoint, cpTriggerCount]}");
                     Utils.LogDebug($"Player current checkpoint: {playerTimers[slot].CurrentMapCheckpoint}; Final checkpoint: {cpTriggerCount}");
                     playerTimer.IsTimerRunning = false;
                     playerTimer.IsRecordingReplay = false;
@@ -112,7 +112,7 @@ namespace SharpTimer
                 if (playerTimer.CurrentMapStage != stageTriggerCount && currentMapOverrideStageRequirement == false)
                 {
                     HudCancelled(player, $"Missed a stage: {playerTimer.CurrentMapStage}/{stageTriggerCount}");
-                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone"]} ({playerTimer.CurrentMapStage}/{stageTriggerCount})");
+                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_stagenotmatchfinalone", playerTimer.CurrentMapStage, stageTriggerCount]}");
                     Utils.LogDebug($"Player {player.PlayerName} ({player.SteamID}) tried to finish a map with a current stage of {playerTimer.CurrentMapStage}, but this map has {stageTriggerCount} stages. It is recommended that you review {Server.MapName} for exploits.");
                     playerTimer.IsTimerRunning = false;
                     playerTimer.IsRecordingReplay = false;
@@ -125,7 +125,7 @@ namespace SharpTimer
                 if (playerTimer.CurrentMapCheckpoint != cpTriggerCount && useCheckpointVerification)
                 {
                     HudCancelled(player, $"Missed a checkpoint: {playerTimer.CurrentMapCheckpoint}/{cpTriggerCount}");
-                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone"]}({cpTriggerCount})");
+                    Utils.PrintToChat(player, $"{ChatColors.LightRed}{Localizer["error_checkpointnotmatchfinalone", playerTimer.CurrentMapCheckpoint, cpTriggerCount]}");
                     Utils.LogDebug($"Player current checkpoint: {playerTimers[slot].CurrentMapCheckpoint}; Final checkpoint: {cpTriggerCount}");
                     playerTimer.IsTimerRunning = false;
                     playerTimer.IsRecordingReplay = false;
