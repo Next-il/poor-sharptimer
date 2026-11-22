@@ -150,6 +150,55 @@ namespace SharpTimer
             Plugin.Logger.LogError($"[ST-ERROR] {msg}");
         }
 
+        // Throw points whose full stack has been logged, and the repeat throttle per site. Some catches run on
+        // Task.Run threads (stage splits, database saves), so both are concurrent.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _loggedStacks = new();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ErrorRepeat> _errorRepeats = new();
+        private const int MaxLoggedStacks = 512;
+        private const long RepeatEveryMs = 10_000;
+
+        private sealed class ErrorRepeat
+        {
+            public long LastMs = long.MinValue / 2;
+            public int Skipped;
+        }
+
+        /// <summary>An exception caught at <paramref name="site"/>. The first time each throw point (site, type and
+        /// the innermost frame that threw) is seen it is logged with its full stack; after that one line per site at
+        /// most every 10 seconds, with how many were skipped, so a failure on every tick cannot flood the log.</summary>
+        public void LogException(string site, Exception ex)
+        {
+            var inner = ex;
+            while (inner.InnerException != null) inner = inner.InnerException;
+            var frame = inner.StackTrace?.Split('\n', 2)[0].Trim() ?? "";
+            var key = $"{site}|{inner.GetType().FullName}|{frame}";
+
+            if (_loggedStacks.Count < MaxLoggedStacks && _loggedStacks.TryAdd(key, 0))
+            {
+                Plugin.Logger.LogError($"[ST-ERROR] {site}: {ex}");
+                return;
+            }
+
+            var repeat = _errorRepeats.GetOrAdd(site, _ => new ErrorRepeat());
+            int skipped;
+            lock (repeat)
+            {
+                var now = Environment.TickCount64;
+                if (now - repeat.LastMs < RepeatEveryMs)
+                {
+                    repeat.Skipped++;
+                    return;
+                }
+
+                skipped = repeat.Skipped;
+                repeat.Skipped = 0;
+                repeat.LastMs = now;
+            }
+
+            Plugin.Logger.LogError($"[ST-ERROR] {site}: {inner.GetType().Name}: {inner.Message} (at {frame})" +
+                                   (skipped > 0 ? $" (+{skipped} more in the last {RepeatEveryMs / 1000}s)" : ""));
+        }
+
         public void ConPrint(string msg)
         {
             Plugin.Logger.LogInformation($"[SharpTimer] {msg}");
@@ -926,7 +975,8 @@ namespace SharpTimer
                 var obsPawn = spectator.PlayerPawn?.Value;
                 if (obsPawn == null || !obsPawn.IsValid) continue;
 
-                if (spectator.Pawn.Value!.ObserverServices!.ObserverTarget.Index == target.Pawn.Index)
+                // A spectator between targets (or whose observer pawn is gone) has no ObserverServices.
+                if (spectator.Pawn.Value?.ObserverServices?.ObserverTarget.Index == target.Pawn.Index)
                 {
                     spectator.PrintToChat($"{Localizer["prefix"]} *{target.PlayerName}* - {message}");
                 }

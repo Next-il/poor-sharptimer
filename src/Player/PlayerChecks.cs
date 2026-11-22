@@ -46,8 +46,9 @@ namespace SharpTimer
                 return false;
 
             bool isConnected = connectedPlayers.ContainsKey(player.Slot) && playerTimers.ContainsKey(player.Slot);
-            bool isObservingValid = player.Pawn?.Value!.ObserverServices?.ObserverTarget != null &&
-                                    specTargets.ContainsKey(player.Pawn.Value.ObserverServices.ObserverTarget.Index);
+            // A dead player's or spectator's pawn can be gone: Pawn.Value is null then.
+            var observerTarget = player.Pawn.Value?.ObserverServices?.ObserverTarget;
+            bool isObservingValid = observerTarget != null && specTargets.ContainsKey(observerTarget.Index);
 
             return isConnected && isObservingValid;
         }
@@ -197,7 +198,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in CheckPlayerCoords: {ex.Message}");
+                Utils.LogException("CheckPlayerCoords", ex);
             }
         }
 

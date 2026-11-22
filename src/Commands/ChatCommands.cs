@@ -1592,7 +1592,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Exception in RespawnPlayer: {ex.Message}");
+                Utils.LogException("RespawnPlayer", ex);
             }
         }
 

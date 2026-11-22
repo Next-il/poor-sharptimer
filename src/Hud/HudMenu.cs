@@ -71,7 +71,7 @@ internal sealed class HudMenu : IDisposable
         }
         catch (Exception e)
         {
-            _st.Utils.LogError($"[HUD] the !hud settings failed to start: {e.Message}");
+            _st.Utils.LogError($"[HUD] the !hud settings failed to start: {e}");
             _panel = null;
         }
     }

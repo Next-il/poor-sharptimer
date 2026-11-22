@@ -98,7 +98,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in ForcePlayerSpeed: {ex.Message}");
+                Utils.LogException("ForcePlayerSpeed", ex);
             }
         }
 
@@ -140,7 +140,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in AdjustPlayerVelocity: {ex.Message}");
+                Utils.LogException("AdjustPlayerVelocity", ex);
             }
         }
 
@@ -178,7 +178,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in AdjustPlayerVelocity2D: {ex.Message}");
+                Utils.LogException("AdjustPlayerVelocity2D", ex);
             }
         }
 
@@ -200,7 +200,8 @@ namespace SharpTimer
 
         public void PrintStartSpeed(CCSPlayerController player)
         {
-            int startSpeed = int.Parse(GetCurrentPlayerSpeed(player));
+            // GetCurrentPlayerSpeed is "" without a pawn.
+            int startSpeed = int.TryParse(GetCurrentPlayerSpeed(player), out var parsed) ? parsed : 0;
             int printSpeed = (maxStartingSpeedEnabled && startSpeed > maxStartingSpeed) ? maxStartingSpeed : startSpeed;
             // The Panorama HUD shows it as the chip under the speed instead.
             if (HudStartSpeedInChat(player))
@@ -715,7 +716,7 @@ namespace SharpTimer
                 }
                 catch (Exception e)
                 {
-                    Utils.LogError($"Couldn't trigger timer stop event {e.Message}");
+                    Utils.LogException("timer finish event", e);
                 }
             });
         }

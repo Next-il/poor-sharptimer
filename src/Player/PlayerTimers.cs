@@ -33,7 +33,7 @@ namespace SharpTimer
             }
             catch (Exception e)
             {
-                Utils.LogError($"Couldn't trigger timer start event {e.Message}");
+                Utils.LogException("timer start event", e);
             }
 
             if (bonusX != 0)
@@ -254,7 +254,7 @@ namespace SharpTimer
                                 }
                                 catch (Exception ex)
                                 {
-                                    Utils.LogError($"Error updating StageTimes dictionary: {ex.Message}");
+                                    Utils.LogException("StageTimes update", ex);
                                     Utils.LogDebug($"Player {playerName} dictionary keys: {string.Join(", ", playerTimer.StageTimes.Keys)}");
                                 }
                             }
@@ -272,7 +272,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in HandlePlayerStageTimes: {ex.Message}");
+                Utils.LogException("HandlePlayerStageTimes", ex);
             }
         }
 
@@ -363,7 +363,7 @@ namespace SharpTimer
                                     }
                                     catch (Exception ex)
                                     {
-                                        Utils.LogError($"Error updating StageTimes dictionary: {ex.Message}");
+                                        Utils.LogException("StageTimes update", ex);
                                         Utils.LogDebug($"Player {playerName} dictionary keys: {string.Join(", ", playerTimer.StageTimes.Keys)}");
                                     }
                                 }
@@ -379,7 +379,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in HandlePlayerCheckpointTimes: {ex.Message}");
+                Utils.LogException("HandlePlayerCheckpointTimes", ex);
             }
         }
 
@@ -472,7 +472,7 @@ namespace SharpTimer
                                     }
                                     catch (Exception ex)
                                     {
-                                        Utils.LogError($"Error updating StageTimes dictionary: {ex.Message}");
+                                        Utils.LogException("StageTimes update", ex);
                                         Utils.LogDebug($"Player {playerName} dictionary keys: {string.Join(", ", playerTimer.StageTimes.Keys)}");
                                     }
                                 }
@@ -489,7 +489,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in HandlePlayerBonusCheckpointTimes: {ex.Message}");
+                Utils.LogException("HandlePlayerBonusCheckpointTimes", ex);
             }
         }
     }

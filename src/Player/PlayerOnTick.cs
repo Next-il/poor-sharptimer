@@ -329,7 +329,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                if (ex.Message != "Invalid game event") Utils.LogError($"Error in TimerOnTick: {ex.StackTrace}");
+                if (ex.Message != "Invalid game event") Utils.LogException("TimerOnTick", ex);
             }
         }
 
@@ -498,7 +498,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                if (ex.Message != "Invalid game event") Utils.LogError($"Error in SpectatorOnTick: {ex.Message}");
+                if (ex.Message != "Invalid game event") Utils.LogException("SpectatorOnTick", ex);
             }
         }
     }

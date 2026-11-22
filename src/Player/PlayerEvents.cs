@@ -31,15 +31,11 @@ namespace SharpTimer
                     return;
                 }
 
-                if (player.PlayerPawn == null)
+                // At player_connect_full the pawn can still be missing (it threw here). EventPlayerSpawn connects
+                // a player that this skipped, so they get their timer on their first spawn instead of never.
+                if (player.PlayerPawn?.Value?.MovementServices == null)
                 {
-                    Utils.LogError("PlayerPawn is null.");
-                    return;
-                }
-
-                if (player.PlayerPawn.Value!.MovementServices == null)
-                {
-                    Utils.LogError("MovementServices is null.");
+                    Utils.LogDebug($"OnPlayerConnect: {player.PlayerName} has no pawn yet, connecting on spawn");
                     return;
                 }
 
@@ -109,7 +105,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in OnPlayerConnect: {ex.Message}");
+                Utils.LogException("OnPlayerConnect", ex);
             }
         }
 
@@ -133,7 +129,9 @@ namespace SharpTimer
                     playerCheckpoints[player.Slot] = new List<PlayerCheckpoint>();
                     playerCheckpoints.Remove(player.Slot);
 
-                    specTargets.Remove(player.Pawn.Value!.EntityHandle.Index);
+                    // The pawn can already be gone when the player leaves.
+                    var pawnIndex = player.Pawn.Value?.EntityHandle.Index;
+                    if (pawnIndex is { } index) specTargets.Remove(index);
 
                     if (enableReplays)
                     {
@@ -143,7 +141,7 @@ namespace SharpTimer
                     }
 
                     Utils.LogDebug($"Removed player {connectedPlayer.PlayerName} with UserID {connectedPlayer.UserId} from connectedPlayers.");
-                    Utils.LogDebug($"Removed specTarget index {player.Pawn.Value.EntityHandle.Index} from specTargets.");
+                    Utils.LogDebug($"Removed specTarget index {pawnIndex?.ToString() ?? "(no pawn)"} from specTargets.");
                     Utils.LogDebug($"Total players connected: {connectedPlayers.Count}");
                     Utils.LogDebug($"Total playerTimers: {playerTimers.Count}");
                     Utils.LogDebug($"Total specTargets: {specTargets.Count}");
@@ -156,7 +154,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in OnPlayerDisconnect (probably replay bot related lolxd): {ex.Message}");
+                Utils.LogException("OnPlayerDisconnect", ex);
             }
         }
     }

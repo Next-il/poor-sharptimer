@@ -20,10 +20,9 @@ public partial class SharpTimer
 
     private string HudConfigPath => Path.Join(gameDir, "csgo", "cfg", "SharpTimer", "hud.json");
 
-    private float _hudErrorAt = -100f;
-
     /// <summary>Runs one HUD step. The HUD is called from inside the timer's tick and its trigger handlers, so an
-    /// exception here must never reach them: it is logged (at most every 10 seconds) and swallowed.</summary>
+    /// exception here must never reach them: it is logged (the stack once per throw point, then at most one line
+    /// every 10 seconds) and the timer carries on.</summary>
     private void HudSafe(string what, Action step)
     {
         try
@@ -36,13 +35,22 @@ public partial class SharpTimer
         }
     }
 
-    private void HudError(string what, Exception e)
+    /// <summary>A HUD answer the timer's own code waits on (does this line still go to chat?). An exception gives
+    /// what SharpTimer did before the HUD, and is logged like <see cref="HudSafe"/>.</summary>
+    private T HudAsk<T>(string what, Func<T> ask, T fallback)
     {
-        var now = Server.CurrentTime;
-        if (now - _hudErrorAt < 10f && now >= _hudErrorAt) return;
-        _hudErrorAt = now;
-        Utils.LogError($"[HUD] {what}: {e}");
+        try
+        {
+            return ask();
+        }
+        catch (Exception e)
+        {
+            HudError(what, e);
+            return fallback;
+        }
     }
+
+    private void HudError(string what, Exception e) => Utils.LogException($"[HUD] {what}", e);
 
     /// <summary>PlayerOnTick: the Panorama HUD for a living player. False: print the center HTML.</summary>
     private bool HudDrive(CCSPlayerController player, PlayerTimerInfo timer, int tick)
@@ -105,7 +113,7 @@ public partial class SharpTimer
         }
         catch (Exception e)
         {
-            Utils.LogError($"[HUD] Panorama failed to start, using the center HTML: {e.Message}");
+            Utils.LogError($"[HUD] Panorama failed to start, using the center HTML: {e}");
             TimerHud = null;
             HudMenuPanel = null;
             return;
@@ -150,12 +158,16 @@ public partial class SharpTimer
 
     // ------------------------------------------------------------------ chat the HUD replaces
 
-    internal bool HudReaches(CCSPlayerController? player) => TimerHud != null && TimerHud.Reaches(player);
+    // These answer the timer's own code from inside its triggers, splits and finish lines (a split's NextFrame
+    // counts the stage after asking them), so none of them may throw: an exception falls back to the chat line.
+
+    internal bool HudReaches(CCSPlayerController? player) =>
+        TimerHud is { } hud && player != null && HudAsk("reach", () => hud.Reaches(player), false);
 
     /// <summary>The panel reaches the player and they have not hidden the timer HUD (!hud off): the card and the
     /// toast show what the chat line would have said.</summary>
     internal bool HudShowsCard(CCSPlayerController? player) =>
-        HudReaches(player) && !(playerTimers.TryGetValue(player!.Slot, out var t) && t.HideTimerHud);
+        player != null && HudReaches(player) && !(playerTimers.TryGetValue(player.Slot, out var t) && t.HideTimerHud);
 
     /// <summary>Whether this player still gets a chat line about their own run that the HUD shows: always without
     /// the HUD, when the panel cannot reach them or they hid the timer HUD, otherwise only when they keep that line
@@ -163,19 +175,25 @@ public partial class SharpTimer
     internal bool HudWantsChat(CCSPlayerController? player, bool keep) => keep || !HudShowsCard(player);
 
     /// <summary>The player's HUD settings, or the server defaults before they load (or without the HUD).</summary>
-    internal HudPrefs HudPrefFor(CCSPlayerController player) =>
-        TimerHud?.PrefsOf(player) ?? HudPrefStore?.Get(player.SteamID) ?? HudPrefs.From(HudSettings);
+    internal HudPrefs HudPrefFor(CCSPlayerController player) => HudAsk("prefs",
+        () => TimerHud?.PrefsOf(player) ?? HudPrefStore?.Get(player.SteamID) ?? HudPrefs.From(HudSettings),
+        HudPrefs.From(HudSettings));
 
     /// <summary>The 3 split lines per stage or checkpoint, for the runner.</summary>
-    internal bool HudSplitsInChat(CCSPlayerController player) => HudWantsChat(player, HudPrefFor(player).SplitsChat);
+    internal bool HudSplitsInChat(CCSPlayerController player) =>
+        HudAsk("splits chat", () => HudWantsChat(player, HudPrefFor(player).SplitsChat), true);
 
     /// <summary>"Start speed: 352", for the runner. With the HUD it follows the Chat tab only; without it, !splits
     /// as it always did.</summary>
-    internal bool HudStartSpeedInChat(CCSPlayerController player) =>
-        HudShowsCard(player) ? HudPrefFor(player).SpeedChat : !(playerTimers.TryGetValue(player.Slot, out var t) && t.HideChatSpeed);
+    internal bool HudStartSpeedInChat(CCSPlayerController player)
+    {
+        var splitsOn = !(playerTimers.TryGetValue(player.Slot, out var t) && t.HideChatSpeed);
+        return HudAsk("start speed chat", () => HudShowsCard(player) ? HudPrefFor(player).SpeedChat : splitsOn, splitsOn);
+    }
 
     /// <summary>The finish, record and points lines, for one player who reads them.</summary>
-    internal bool HudFinishInChat(CCSPlayerController player) => HudWantsChat(player, HudPrefFor(player).FinishChat);
+    internal bool HudFinishInChat(CCSPlayerController player) =>
+        HudAsk("finish chat", () => HudWantsChat(player, HudPrefFor(player).FinishChat), true);
 
     /// <summary>Utils.PrintToChatAll for a finish or record line: the runner sees it on the card, everyone else in
     /// the records feed, so it goes to whoever the HUD does not cover and to whoever keeps finish messages in chat.</summary>
@@ -190,8 +208,12 @@ public partial class SharpTimer
         foreach (var p in Utilities.GetPlayers())
         {
             if (p is not { IsValid: true, IsBot: false }) continue;
-            var covered = runner != null && p.Slot == runner.Slot ? HudShowsCard(p) : HudReaches(p);
-            if (!covered || HudPrefFor(p).FinishChat) p.PrintToChat($" {Localizer["prefix"]} {message}");
+            var print = HudAsk("finish line", () =>
+            {
+                var covered = runner != null && p.Slot == runner.Slot ? HudShowsCard(p) : HudReaches(p);
+                return !covered || HudPrefFor(p).FinishChat;
+            }, true);
+            if (print) p.PrintToChat($" {Localizer["prefix"]} {message}");
         }
     }
 
@@ -209,7 +231,7 @@ public partial class SharpTimer
         foreach (var spectator in Utilities.GetPlayers())
         {
             if (spectator is not { IsValid: true } || spectator.TeamNum != (byte)CsTeam.Spectator) continue;
-            if (HudShowsCard(spectator) && !keep(HudPrefFor(spectator))) continue;
+            if (HudAsk("spectator line", () => HudShowsCard(spectator) && !keep(HudPrefFor(spectator)), false)) continue;
             if (spectator.Pawn.Value?.ObserverServices?.ObserverTarget.Index == target.Pawn.Index)
                 spectator.PrintToChat($"{Localizer["prefix"]} *{target.PlayerName}* - {message}");
         }

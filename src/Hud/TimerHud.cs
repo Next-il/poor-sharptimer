@@ -139,7 +139,7 @@ internal sealed class TimerHud : IDisposable
         }
         catch (Exception e)
         {
-            _st.Utils.LogError($"[HUD] the Panorama HUD failed to start, every player gets the center HTML: {e.Message}");
+            _st.Utils.LogError($"[HUD] the Panorama HUD failed to start, every player gets the center HTML: {e}");
             _panel = null;
         }
     }

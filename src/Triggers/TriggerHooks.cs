@@ -19,6 +19,14 @@ namespace SharpTimer
 {
     public partial class SharpTimer
     {
+        /// <summary>The controller of the player pawn touching a trigger, or null when the pawn has none (a pawn that
+        /// is being removed after its player left, or one between controllers).</summary>
+        private static CCSPlayerController? TouchingPlayer(CEntityInstance activator)
+        {
+            var controller = new CCSPlayerPawn(activator.Handle).Controller.Value;
+            return controller is { IsValid: true } ? new CCSPlayerController(controller.Handle) : null;
+        }
+
         public HookResult TriggerMultiple_OnStartTouch(CEntityIOOutput output, string name, CEntityInstance activator, CEntityInstance caller, CVariant value, float delay)
         {
             try
@@ -31,7 +39,7 @@ namespace SharpTimer
 
                 if (activator.DesignerName != "player" || useTriggers == false) return HookResult.Continue;
 
-                var player = new CCSPlayerController(new CCSPlayerPawn(activator.Handle).Controller.Value!.Handle);
+                var player = TouchingPlayer(activator);
 
                 if (player == null)
                 {
@@ -44,7 +52,7 @@ namespace SharpTimer
                     return HookResult.Continue;
                 }
 
-                if (!IsAllowedPlayer(player) || caller.Entity!.Name == null || !connectedPlayers.TryGetValue(player.Slot, out var connected))
+                if (!IsAllowedPlayer(player) || caller.Entity?.Name == null || !connectedPlayers.TryGetValue(player.Slot, out var connected))
                     return HookResult.Continue;
 
                 var callerHandle = caller.Handle;
@@ -173,7 +181,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Exception in trigger_multiple OnStartTouch hook: {ex.Message}");
+                Utils.LogException("trigger_multiple OnStartTouch", ex);
                 return HookResult.Continue;
             }
         }
@@ -191,7 +199,7 @@ namespace SharpTimer
 
                 if (activator.DesignerName != "player" || useTriggers == false) return HookResult.Continue;
 
-                var player = new CCSPlayerController(new CCSPlayerPawn(activator.Handle).Controller.Value!.Handle);
+                var player = TouchingPlayer(activator);
 
                 if (player == null)
                 {
@@ -204,7 +212,7 @@ namespace SharpTimer
                     return HookResult.Continue;
                 }
 
-                if (!IsAllowedPlayer(player) || caller.Entity!.Name == null || !connectedPlayers.TryGetValue(player.Slot, out var connected)) return HookResult.Continue;
+                if (!IsAllowedPlayer(player) || caller.Entity?.Name == null || !connectedPlayers.TryGetValue(player.Slot, out var connected)) return HookResult.Continue;
 
                 var slot = player.Slot;
                 var playerName = player.PlayerName;
@@ -269,7 +277,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Exception in trigger_multiple OnEndTouch hook: {ex.Message}");
+                Utils.LogException("trigger_multiple OnEndTouch", ex);
                 return HookResult.Continue;
             }
         }
@@ -291,7 +299,7 @@ namespace SharpTimer
                     return HookResult.Continue;
                 }
 
-                var player = new CCSPlayerController(new CCSPlayerPawn(activator.Handle).Controller.Value!.Handle);
+                var player = TouchingPlayer(activator);
 
                 if (player == null || player.IsBot || player.IsHLTV || !player.IsValid)
                 {
@@ -308,7 +316,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex.Message);
+                Utils.LogException("trigger_teleport OnStartTouch", ex);
                 return HookResult.Continue;
             }
         }
@@ -328,7 +336,7 @@ namespace SharpTimer
                     return HookResult.Continue;
                 }
 
-                var player = new CCSPlayerController(new CCSPlayerPawn(activator.Handle).Controller.Value!.Handle);
+                var player = TouchingPlayer(activator);
 
                 if (player == null || player.IsBot || player.IsHLTV || !player.IsValid)
                 {
@@ -340,7 +348,9 @@ namespace SharpTimer
 
                 if (resetTriggerTeleportSpeedEnabled)
                 {
-                    string triggerName = caller.Entity!.Name.ToString();
+                    // Most surf fall-teleports have no targetname: Entity.Name is null for them (it threw here on every
+                    // one). An unnamed trigger cannot be in the per-map override list, so it loses speed like any other.
+                    string triggerName = caller.Entity?.Name ?? "";
                     if (currentMapOverrideDisableTelehop != null && (!currentMapOverrideDisableTelehop!.Contains(triggerName) || currentMapOverrideDisableTelehop![0].ToLower() == "true"))
                     {
                         Action<CCSPlayerController?, float, bool> adjustVelocity = use2DSpeed ? AdjustPlayerVelocity2D : AdjustPlayerVelocity;
@@ -357,7 +367,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError(ex.Message);
+                Utils.LogException("trigger_teleport OnEndTouch", ex);
                 return HookResult.Continue;
             }
         }

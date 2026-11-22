@@ -290,7 +290,7 @@ namespace SharpTimer
             catch (Exception ex)
             {
                 if (ex.Message != "Invalid game event")
-                    Utils.LogError($"Error in OnTickZoneTool: {ex.Message}");
+                    Utils.LogException("OnTickZoneTool", ex);
             }
         }
 

@@ -367,6 +367,6 @@ internal sealed class HudPrefsStore
         _failed = true;
         CounterStrikeSharp.API.Server.NextFrame(() =>
             _plugin.Utils.LogError($"[HUD] settings {what} failed, using defaults without saving until the next restart " +
-                                   $"(run sharptimer-hud-settings.sql if the table is missing): {e.Message}"));
+                                   $"(run sharptimer-hud-settings.sql if the table is missing): {e}"));
     }
 }

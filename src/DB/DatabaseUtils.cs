@@ -1229,8 +1229,7 @@ namespace SharpTimer
             catch (Exception ex)
             {
                 Server.NextFrame(() =>
-                    Utils.LogError(
-                        $"Error saving player {(bonusX != 0 ? $"bonus {bonusX} time" : "time")} to database: {ex.Message}"));
+                    Utils.LogException(bonusX != 0 ? "saving a bonus time" : "saving a time", ex));
             }
         }
 
@@ -1751,8 +1750,7 @@ namespace SharpTimer
             catch (Exception ex)
             {
                 Server.NextFrame(() =>
-                    Utils.LogError(
-                        $"Error saving player {(bonusX != 0 ? $"bonus {bonusX} time" : "time")} to database: {ex.Message}"));
+                    Utils.LogException("saving a stage time", ex));
             }
         }
 

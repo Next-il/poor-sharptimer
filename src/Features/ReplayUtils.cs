@@ -56,7 +56,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in ReplayUpdate: {ex.Message}");
+                Utils.LogException("ReplayUpdate", ex);
             }
         }
 
@@ -109,7 +109,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in ReplayPlayback: {ex.Message}");
+                Utils.LogException("ReplayPlayback", ex);
             }
         }
 
@@ -139,7 +139,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in ReplayPlay: {ex.Message}");
+                Utils.LogException("ReplayPlay", ex);
             }
         }
 
@@ -157,7 +157,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in OnRecordingStart: {ex.Message}");
+                Utils.LogException("OnRecordingStart", ex);
             }
         }
 
@@ -170,7 +170,7 @@ namespace SharpTimer
             }
             catch (Exception ex)
             {
-                Utils.LogError($"Error in OnRecordingStop: {ex.Message}");
+                Utils.LogException("OnRecordingStop", ex);
             }
         }
 

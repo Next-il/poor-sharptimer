@@ -499,6 +499,11 @@ public partial class SharpTimer : BasePlugin
         if (playerPawn == null)
             return HookResult.Continue;
 
+        // player_connect_full can come before the pawn exists, and OnPlayerConnect skips such a player: without
+        // this they had no timer at all until they reconnected.
+        if (!connectedPlayers.ContainsKey(player.Slot))
+            OnPlayerConnect(player);
+
         //just.. dont ask.
         AddTimer(0f, () =>
         {
