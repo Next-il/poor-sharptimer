@@ -375,9 +375,8 @@ def hud_css():
     out += ["", "/* rank name colour, from the rank's chat colour in ranks.json */"]
     for name, col in RANK_COLORS.items():
         out.append(f".tc-rank.rc-{name} {{ color: {col}; }}")
-    out += ["", "/* rank icons, baked into the addon from remote_data/rank_icons (18x20) */"]
-    for name in RANK_ICONS:
-        out.append(f'.tc-ricon.ri-{name} {{ background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/{name}_png.vtex"); }}')
+    # No rank icon images (owner, 11-22): Workshop Tools has no standalone compiler for PNGs, so the rank
+    # shows as its coloured name (RankDisplay "text"). The .tc-ricon panel stays for a later vector badge set.
     return "\n".join(out) + "\n"
 
 

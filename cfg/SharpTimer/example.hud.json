@@ -16,7 +16,7 @@
   // Open questions from the design, each at today's behaviour:
   "FeedFinishes": true,          // plain finishes go to everyone's records feed (false: only PBs and records)
   "LivePlace": true,             // the live "#3" on the card while running
-  "RankDisplay": "icon",         // "icon" (the rank PNG, as today), "text" (name in the rank colour) or "both"
+  "RankDisplay": "text",         // "text" (name in the rank colour). "icon"/"both" need rank images in the addon, which it does not ship
   "SplitBarOverflow": "count",   // more than 16 stages/checkpoints: "count" (no bar), "group" or "scroll"
   "ShowWorldRecord": false,      // WR as the card's third time (needs a global API key; this fork has none)
   // The SR chat ad is sharptimer_ad_sr_enabled in config.cfg, as before.

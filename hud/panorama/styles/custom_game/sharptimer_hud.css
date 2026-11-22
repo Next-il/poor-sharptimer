@@ -838,29 +838,3 @@
 .tc-rank.rc-magenta { color: #e05ad1; }
 .tc-rank.rc-lightred { color: #ff7a7a; }
 .tc-rank.rc-orange { color: #f39a3a; }
-
-/* rank icons, baked into the addon from remote_data/rank_icons (18x20) */
-.tc-ricon.ri-unranked { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/unranked_png.vtex"); }
-.tc-ricon.ri-bronze { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/bronze_png.vtex"); }
-.tc-ricon.ri-silver1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/silver1_png.vtex"); }
-.tc-ricon.ri-silver2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/silver2_png.vtex"); }
-.tc-ricon.ri-silver3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/silver3_png.vtex"); }
-.tc-ricon.ri-gold1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/gold1_png.vtex"); }
-.tc-ricon.ri-gold2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/gold2_png.vtex"); }
-.tc-ricon.ri-gold3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/gold3_png.vtex"); }
-.tc-ricon.ri-plat1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/plat1_png.vtex"); }
-.tc-ricon.ri-plat2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/plat2_png.vtex"); }
-.tc-ricon.ri-plat3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/plat3_png.vtex"); }
-.tc-ricon.ri-dia1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/dia1_png.vtex"); }
-.tc-ricon.ri-dia2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/dia2_png.vtex"); }
-.tc-ricon.ri-dia3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/dia3_png.vtex"); }
-.tc-ricon.ri-master1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/master1_png.vtex"); }
-.tc-ricon.ri-master2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/master2_png.vtex"); }
-.tc-ricon.ri-master3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/master3_png.vtex"); }
-.tc-ricon.ri-legend1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/legend1_png.vtex"); }
-.tc-ricon.ri-legend2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/legend2_png.vtex"); }
-.tc-ricon.ri-legend3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/legend3_png.vtex"); }
-.tc-ricon.ri-royal1 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/royal1_png.vtex"); }
-.tc-ricon.ri-royal2 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/royal2_png.vtex"); }
-.tc-ricon.ri-royal3 { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/royal3_png.vtex"); }
-.tc-ricon.ri-god { background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/god_png.vtex"); }

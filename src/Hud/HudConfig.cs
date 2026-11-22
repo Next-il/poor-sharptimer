@@ -33,7 +33,7 @@ public sealed class HudConfig
     public bool LivePlace { get; set; } = true;
 
     /// <summary>"icon" (today: the rank PNG), "text" (the rank name in its colour) or "both".</summary>
-    public string RankDisplay { get; set; } = "icon";
+    public string RankDisplay { get; set; } = "text";
 
     /// <summary>More checkpoints or stages than the bar's 16 segments: "count" (no bar, only "12/24"), "group"
     /// (each segment covers several, coloured by the last split in it) or "scroll" (the 16 around the current one).</summary>
@@ -101,7 +101,7 @@ public sealed class HudConfig
         SpeedRate = Math.Clamp(SpeedRate, 1, 64);
         SyncRate = Math.Clamp(SyncRate, 1, 64);
         PlaceRate = Math.Clamp(PlaceRate, 1, 64);
-        RankDisplay = RankDisplay?.Trim().ToLowerInvariant() is "text" or "both" or "icon" ? RankDisplay.Trim().ToLowerInvariant() : "icon";
+        RankDisplay = RankDisplay?.Trim().ToLowerInvariant() is "text" or "both" or "icon" ? RankDisplay.Trim().ToLowerInvariant() : "text";
         SplitBarOverflow = SplitBarOverflow?.Trim().ToLowerInvariant() is "group" or "scroll" ? SplitBarOverflow.Trim().ToLowerInvariant() : "count";
         SpeedBarMax = Math.Max(100, SpeedBarMax);
         Defaults ??= new HudDefaults();
