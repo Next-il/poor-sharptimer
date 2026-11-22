@@ -377,7 +377,7 @@ def hud_css():
         out.append(f".tc-rank.rc-{name} {{ color: {col}; }}")
     out += ["", "/* rank icons, baked into the addon from remote_data/rank_icons (18x20) */"]
     for name in RANK_ICONS:
-        out.append(f'.tc-ricon.ri-{name} {{ background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/{name}.png"); }}')
+        out.append(f'.tc-ricon.ri-{name} {{ background-image: url("s2r://panorama/images/custom_game/sharptimer/ranks/{name}_png.vtex"); }}')
     return "\n".join(out) + "\n"
 
 
