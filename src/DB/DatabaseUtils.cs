@@ -941,6 +941,8 @@ namespace SharpTimer
                             int prevSRTimerTicks = prevSRData.Item3;
                             
                             await upsertCommand!.ExecuteNonQueryAsync();
+                            // The map records list and the live place follow a new PB on the main course.
+                            if (bonusX == 0 && style == 0 && beatPB) Server.NextFrame(() => HudTopChanged(mode));
                             Server.NextFrame(() =>
                                 Utils.LogDebug(
                                     $"Saved player {(bonusX != 0 ? $"bonus {bonusX} time" : "time")} to database for {playerName} {timerTicks} {DateTimeOffset.UtcNow.ToUnixTimeSeconds()}"));
@@ -1106,6 +1108,8 @@ namespace SharpTimer
                             int prevSRTimerTicks = prevSRData.Item3;
                             
                             await upsertCommand!.ExecuteNonQueryAsync();
+                            // The map records list and the live place follow a first time on the main course.
+                            if (bonusX == 0 && style == 0) Server.NextFrame(() => HudTopChanged(mode));
 
                             if (globalRanksEnabled)
                             {

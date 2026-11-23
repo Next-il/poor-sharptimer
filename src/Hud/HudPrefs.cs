@@ -16,7 +16,9 @@ namespace SharpTimer.Hud;
 /// in hud.json still reaches everyone who never touched that option. Keys: card cs (timer card spot, size),
 /// cl cls (speed: spot or nx, size; "cl" is the old speed + keys cluster, so a saved cluster spot is now the speed
 /// spot), ky kys (keys), kr (keys in one row), ts tss (toast: spot or card, size), fd fds (records feed),
-/// cd sp sb sy pc rk fo (card, speed, speed bar, sync, PB and SR, rank, feed: 0 hides), ac (accent), cc
+/// mr mrs (map records: spot, size), mro (map records: 0 hides), mrw (map records shown: a always, j after joining
+/// or a map start, h only in !hud), cd sp sb sy pc rk fo (card, speed, speed bar, sync, PB and SR, rank, feed: 0
+/// hides), ac (accent), cc
 /// (compact card), op (background lo|md|hi), tx (text size), td (running clock decimals 1|2|3), spc ssc fc (splits, start speed and finish
 /// messages in chat), hs (has opened the settings once). Unknown keys and bad values are ignored.</para>
 /// </summary>
@@ -35,6 +37,9 @@ public sealed class HudPrefs
     public string ToastSize = "m";
     public string Feed = "tr";
     public string FeedSize = "m";
+    /// <summary>The map records' spot.</summary>
+    public string Records = "tl";
+    public string RecordsSize = "m";
 
     // ---- show / hide
     public bool CardOn = true;
@@ -44,6 +49,9 @@ public sealed class HudPrefs
     public bool Compare = true;
     public bool Rank = true;
     public bool FeedOn = true;
+    public bool RecordsOn = true;
+    /// <summary>When the map records show: a (always), j (after joining or a map start) or h (only in !hud).</summary>
+    public string RecordsShow = "a";
 
     // ---- style
     public string Accent = "ice";
@@ -77,6 +85,8 @@ public sealed class HudPrefs
         p.Apply("tss", d.ToastSize);
         p.Apply("fd", d.Feed);
         p.Apply("fds", d.FeedSize);
+        p.Apply("mr", d.MapRecords);
+        p.Apply("mrs", d.MapRecordsSize);
         p.KeysRow = string.Equals(d.KeysLayout, "row", StringComparison.OrdinalIgnoreCase);
         p.CardOn = d.CardOn;
         p.SpeedOn = d.Speed;
@@ -85,6 +95,8 @@ public sealed class HudPrefs
         p.Compare = d.Compare;
         p.Rank = d.Rank;
         p.FeedOn = d.FeedOn;
+        p.RecordsOn = d.MapRecordsOn;
+        p.Apply("mrw", d.MapRecordsShow);
         p.Apply("ac", d.Accent);
         p.Compact = d.CompactCard;
         p.Apply("op", d.Opacity);
@@ -93,10 +105,19 @@ public sealed class HudPrefs
         p.SplitsChat = config.SplitsInChat;
         p.SpeedChat = config.StartSpeedInChat;
         p.FinishChat = config.RecordsInChat;
-        // Two parts on one spot from a hand-edited hud.json: the keys make room.
+        // Two parts on one spot from a hand-edited hud.json: the keys make room, then the map records.
         if (p.Keys == p.Card || p.Keys == p.Speed || p.Keys == p.Toast || p.Keys == p.Feed)
             p.Keys = HudLayout.Positions.FirstOrDefault(s => s != p.Card && s != p.Speed && s != p.Toast && s != p.Feed) ?? p.Keys;
+        p.RecordsMakeRoom();
         return p;
+    }
+
+    /// <summary>The map records came later than every other part: on a spot another part already holds (an old
+    /// saved row, a hand-edited hud.json), they move to the first free one.</summary>
+    private void RecordsMakeRoom()
+    {
+        bool Taken(string s) => s == Card || s == Speed || s == Keys || s == Toast || s == Feed;
+        if (Taken(Records)) Records = HudLayout.Positions.FirstOrDefault(s => !Taken(s)) ?? Records;
     }
 
     /// <summary>Puts the layout (spots, sizes, keys layout) back to <paramref name="d"/>.</summary>
@@ -104,6 +125,7 @@ public sealed class HudPrefs
     {
         Card = d.Card; CardSize = d.CardSize; Speed = d.Speed; SpeedSize = d.SpeedSize; Keys = d.Keys; KeysSize = d.KeysSize;
         KeysRow = d.KeysRow; Toast = d.Toast; ToastSize = d.ToastSize; Feed = d.Feed; FeedSize = d.FeedSize;
+        Records = d.Records; RecordsSize = d.RecordsSize;
     }
 
     private static string B(bool v) => v ? "1" : "0";
@@ -123,6 +145,8 @@ public sealed class HudPrefs
         Add("tss", ToastSize, d.ToastSize);
         Add("fd", Feed, d.Feed);
         Add("fds", FeedSize, d.FeedSize);
+        Add("mr", Records, d.Records);
+        Add("mrs", RecordsSize, d.RecordsSize);
         Add("cd", B(CardOn), B(d.CardOn));
         Add("sp", B(SpeedOn), B(d.SpeedOn));
         Add("sb", B(SpeedBar), B(d.SpeedBar));
@@ -130,6 +154,8 @@ public sealed class HudPrefs
         Add("pc", B(Compare), B(d.Compare));
         Add("rk", B(Rank), B(d.Rank));
         Add("fo", B(FeedOn), B(d.FeedOn));
+        Add("mro", B(RecordsOn), B(d.RecordsOn));
+        Add("mrw", RecordsShow, d.RecordsShow);
         Add("ac", Accent, d.Accent);
         Add("cc", B(Compact), B(d.Compact));
         Add("op", Opacity, d.Opacity);
@@ -156,6 +182,8 @@ public sealed class HudPrefs
         // A row saved before keys had a spot of their own: keys go to their default unless a part already sits there.
         if (p.Keys == p.Card || p.Keys == p.Speed || p.Keys == p.Toast || p.Keys == p.Feed)
             p.Keys = HudLayout.Positions.FirstOrDefault(s => s != p.Card && s != p.Speed && s != p.Toast && s != p.Feed) ?? p.Keys;
+        // A row saved before the map records: they take a free spot if one of that row's parts sits on theirs.
+        p.RecordsMakeRoom();
         return p;
     }
 
@@ -170,6 +198,10 @@ public sealed class HudPrefs
             case "ky": if (HudLayout.IsPosition(v)) Keys = v; break;
             case "ts": if (HudLayout.IsPosition(v) || v == HudLayout.WithCard) Toast = v; break;
             case "fd": if (HudLayout.IsPosition(v)) Feed = v; break;
+            case "mr": if (HudLayout.IsPosition(v)) Records = v; break;
+            case "mrs": if (HudLayout.IsSize(v)) RecordsSize = v; break;
+            case "mro": RecordsOn = v != "0"; break;
+            case "mrw": if (HudLayout.RecordsShow(v) is { } w) RecordsShow = w; break;
             case "cs": if (HudLayout.IsSize(v)) CardSize = v; break;
             case "cls": if (HudLayout.IsSize(v)) SpeedSize = v; break;
             case "kys": if (HudLayout.IsSize(v)) KeysSize = v; break;

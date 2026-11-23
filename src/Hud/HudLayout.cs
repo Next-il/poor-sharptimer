@@ -78,6 +78,19 @@ internal static class HudLayout
 
     public const int Segments = 16;
     public const int FeedSlots = 5;
+    /// <summary>The map records list's row slots (mr0..mr9).</summary>
+    public const int MapRecordRows = 10;
+
+    /// <summary>When the map records show: always, on map join, only in !hud.</summary>
+    public static readonly string[] RecordsShows = ["a", "j", "h"];
+
+    public static string? RecordsShow(string? v) => (v ?? "").Trim().ToLowerInvariant() switch
+    {
+        "a" or "always" => "a",
+        "j" or "join" or "onjoin" or "on join" => "j",
+        "h" or "hud" or "menu" => "h",
+        _ => null,
+    };
     public const int Steps = 50;
 
     public static readonly string[] StepClasses = Enumerable.Range(0, Steps + 1).Select(i => "p" + i).ToArray();

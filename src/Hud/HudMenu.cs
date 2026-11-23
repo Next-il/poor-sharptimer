@@ -8,9 +8,11 @@ namespace SharpTimer.Hud;
 /// (hud/panorama/layout/custom_game/sharptimer_menu.xml), clickable, in the /rank Settings tab's look. Five tabs:
 /// <list type="bullet">
 /// <item>Layout: a mini map of the screen with CS2's own HUD in grey. Pick a part (timer card, speed, keys, splits,
-/// records feed), click a spot; S / M / L per part; next to the card (speed) and with the card (splits).</item>
+/// records feed, map records), click a spot; S / M / L per part; next to the card (speed) and with the card
+/// (splits).</item>
 /// <item>Show / Hide: the timer HUD (!hud on|off), the card, PB and SR, rank, the split toast (!splits), speed,
-/// the speed bar, sync, keys (!keys) and the records feed.</item>
+/// the speed bar, sync, keys (!keys) and the records feed; then the map records: off, always, on map join or only
+/// in !hud.</item>
 /// <item>Style: accent, full or compact card, background, text size, timer decimals.</item>
 /// <item>Chat: splits (off / HUD / HUD + chat), keys, start speed in chat, finish messages in chat.</item>
 /// <item>Reset: the layout, or everything.</item>
@@ -24,8 +26,8 @@ internal sealed class HudMenu : IDisposable
     public const int TabLayout = 0, TabShow = 1, TabStyle = 2, TabChat = 3, TabReset = 4;
     private static readonly string[] TabSteps = ["at-0", "at-1", "at-2", "at-3", "at-4"];
 
-    private const int PartCard = 0, PartSpeed = 1, PartKeys = 2, PartToast = 3, PartFeed = 4;
-    private static readonly string[] PartIds = ["card", "sp", "ks", "ts", "fd"];
+    private const int PartCard = 0, PartSpeed = 1, PartKeys = 2, PartToast = 3, PartFeed = 4, PartRecords = 5;
+    private static readonly string[] PartIds = ["card", "sp", "ks", "ts", "fd", "mr"];
 
     /// <summary>Where a part that has to make room goes when the spot it came from is not a spot (next to / with the card).</summary>
     private static readonly string[] Fallback = ["bc", "xu", "rw", "tc", "tr", "br", "tl", "ml", "mr", "xa"];
@@ -169,7 +171,11 @@ internal sealed class HudMenu : IDisposable
         Size(player, w, "mb_fd", prefs.FeedSize);
         w.Cls(panel, player, "mb_fd", "off", !prefs.FeedOn);
 
-        bool[] hidden = [hudOff || !prefs.CardOn, hudOff || !prefs.SpeedOn, keysOff, splitsOff, !prefs.FeedOn];
+        w.OneOf(panel, player, "mb_mr", "p-" + prefs.Records, HudLayout.PosClasses);
+        Size(player, w, "mb_mr", prefs.RecordsSize);
+        w.Cls(panel, player, "mb_mr", "off", !prefs.RecordsOn);
+
+        bool[] hidden = [hudOff || !prefs.CardOn, hudOff || !prefs.SpeedOn, keysOff, splitsOff, !prefs.FeedOn, !prefs.RecordsOn];
         for (var i = 0; i < PartIds.Length; i++)
         {
             var id = PartIds[i];
@@ -197,6 +203,7 @@ internal sealed class HudMenu : IDisposable
             PartSpeed => prefs.SpeedSize,
             PartKeys => prefs.KeysSize,
             PartToast => prefs.Toast == HudLayout.WithCard ? prefs.CardSize : prefs.ToastSize,
+            PartRecords => prefs.RecordsSize,
             _ => prefs.FeedSize,
         };
         foreach (var s in HudLayout.Sizes) w.Cls(panel, player, "ms_" + s, "on", s == size);
@@ -239,6 +246,11 @@ internal sealed class HudMenu : IDisposable
             };
             w.Cls(panel, player, "vr_" + key, "disabled", muted);
         }
+
+        // map records: off, or when they show
+        w.Cls(panel, player, "vo_mr_off", "on", !p.RecordsOn);
+        foreach (var when in HudLayout.RecordsShows)
+            w.Cls(panel, player, "vo_mr_" + when, "on", p.RecordsOn && p.RecordsShow == when);
     }
 
     private void DrawStyle(CCSPlayerController player, Viewer v, HudPrefs p)
@@ -277,6 +289,7 @@ internal sealed class HudMenu : IDisposable
         PartSpeed => p.Speed,
         PartKeys => p.Keys,
         PartToast => p.Toast,
+        PartRecords => p.Records,
         _ => p.Feed,
     };
 
@@ -288,6 +301,7 @@ internal sealed class HudMenu : IDisposable
             case PartSpeed: p.Speed = pos; break;
             case PartKeys: p.Keys = pos; break;
             case PartToast: p.Toast = pos; break;
+            case PartRecords: p.Records = pos; break;
             default: p.Feed = pos; break;
         }
     }
@@ -335,6 +349,22 @@ internal sealed class HudMenu : IDisposable
         if (id.StartsWith("lp_") && Array.IndexOf(PartIds, id[3..]) is var part and >= 0)
         {
             v.Part = part;
+            Draw(player, v);
+            return;
+        }
+
+        if (id.StartsWith("vo_mr_"))
+        {
+            var when = id[6..];
+            if (when == "off") Change(player, p => p.RecordsOn = false);
+            else if (HudLayout.RecordsShow(when) is { } w)
+                Change(player, p =>
+                {
+                    p.RecordsOn = true;
+                    p.RecordsShow = w;
+                });
+            else return;
+
             Draw(player, v);
             return;
         }
@@ -433,6 +463,7 @@ internal sealed class HudMenu : IDisposable
                             case PartSpeed: p.SpeedSize = size; break;
                             case PartKeys: p.KeysSize = size; break;
                             case PartToast: p.ToastSize = size; break;
+                            case PartRecords: p.RecordsSize = size; break;
                             default: p.FeedSize = size; break;
                         }
                     });

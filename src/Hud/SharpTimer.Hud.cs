@@ -141,6 +141,7 @@ public partial class SharpTimer
             Utils.LogError("[HUD] hud.json Enabled changed: it takes effect on the next plugin load");
         fresh.Enabled = HudSettings.Enabled;
         HudSettings = fresh;
+        HudTopReset();
         if (TimerHud != null) HudSafe("map start", TimerHud.MapStart);
     }
 
@@ -267,6 +268,13 @@ public partial class SharpTimer
             if (!bonus && kind == "STAGE" && count > 0) TimerHud.MarkSegment(player, count - 1);
             TimerHud.Finished(player, ticks, pb);
         });
+
+        // With a database the save itself refreshes the map records; the JSON store is read again a moment later.
+        if (!enableDb && !bonus && t.currentStyle == 0)
+        {
+            var mode = HudModeOf(t);
+            AddTimer(2f, () => HudSafe("map records", () => HudTopChanged(mode)));
+        }
     }
 
     private void HudCancelled(CCSPlayerController player, string reason)
@@ -476,19 +484,120 @@ public partial class SharpTimer
     internal PlayerRecord? HudServerRecord(CCSPlayerController player)
     {
         if (!playerTimers.TryGetValue(player.Slot, out var t)) return null;
-        var records = t.Mode switch
+        var top = HudMapTop(HudModeOf(t));
+        return top is { Count: > 0 } ? top[0] : null;
+    }
+
+    // ------------------------------------------------------------------ the map's top times (map records)
+    // SharpTimer's per-mode record caches (SortedCached<Mode>Records) are declared but were never filled again
+    // after upstream fdca8d1 moved to on-demand queries, so the live place always said #1. The HUD fills them:
+    // the current map's top 100 on the main course, normal style, with the same query !top uses
+    // (GetSortedRecordsFromDatabase). One mode at a time, the first time something asks for it, again after a new
+    // PB or first time in it, and from scratch on a map start. Never per tick: an ask while loaded is a lookup.
+    // Main thread only.
+
+    private const int HudTopLimit = 100;
+    private readonly Dictionary<string, List<PlayerRecord>> _hudTop = new();
+    private readonly HashSet<string> _hudTopLoading = new();
+    private readonly HashSet<string> _hudTopStale = new();
+    private readonly Dictionary<string, float> _hudTopRetryAt = new();
+    private int _hudTopGen;
+
+    internal string HudModeOf(PlayerTimerInfo? t) => string.IsNullOrEmpty(t?.Mode) ? HudDefaultModeName : t.Mode;
+
+    /// <summary>The cached top of this map in <paramref name="mode"/>, fastest first. Null while it loads (the
+    /// first ask starts the load).</summary>
+    internal IReadOnlyList<PlayerRecord>? HudMapTop(string mode)
+    {
+        if (_hudTop.TryGetValue(mode, out var list)) return list;
+        if (!_hudTopRetryAt.TryGetValue(mode, out var at) || Server.CurrentTime >= at) HudLoadTop(mode);
+        return null;
+    }
+
+    /// <summary>A new time on the main course in <paramref name="mode"/> was saved: load the top again. The old
+    /// list stays up until the new one is in.</summary>
+    internal void HudTopChanged(string mode)
+    {
+        // Nobody asked for this mode yet: the first ask loads it fresh.
+        if (!_hudTop.ContainsKey(mode) && !_hudTopLoading.Contains(mode)) return;
+        _hudTopStale.Add(mode);
+        HudLoadTop(mode);
+    }
+
+    private void HudLoadTop(string mode)
+    {
+        // One query per mode at a time; a time saved meanwhile marks it stale and it loads again after.
+        if (!_hudTopLoading.Add(mode)) return;
+        _hudTopStale.Remove(mode);
+
+        var gen = _hudTopGen;
+        var map = Server.MapName;
+        var useDb = enableDb;
+        var jsonMode = mode == HudDefaultModeName;
+        Task.Run(async () =>
         {
-            "85t" => SortedCached85tRecords,
-            "102t" => SortedCached102tRecords,
-            "128t" => SortedCached128tRecords,
-            "Source" => SortedCachedSourceRecords,
-            "Bhop" => SortedCachedBhopRecords,
-            "Custom" => SortedCachedCustomRecords,
-            _ => SortedCachedStandardRecords,
-        };
-        if (records == null || records.Count == 0) return null;
-        var first = records.First().Value;
-        return first.TimerTicks > 0 ? first : null;
+            Dictionary<int, PlayerRecord>? records = null;
+            Exception? error = null;
+            try
+            {
+                if (useDb)
+                    records = await GetSortedRecordsFromDatabase(HudTopLimit, 0, map, 0, mode);
+                else if (jsonMode)
+                    records = (await Utils.GetSortedRecords(0, $"{map}.json"))
+                        .Select((kv, i) => (i, new PlayerRecord { SteamID = kv.Key, PlayerName = kv.Value.PlayerName, TimerTicks = kv.Value.TimerTicks }))
+                        .ToDictionary(x => x.i, x => x.Item2);
+                else
+                    records = []; // the JSON store has no modes
+            }
+            catch (Exception e)
+            {
+                error = e;
+            }
+
+            Server.NextFrame(() =>
+            {
+                _hudTopLoading.Remove(mode);
+                if (gen != _hudTopGen) return; // the map changed meanwhile
+                if (records == null)
+                {
+                    if (error != null) HudError("map records", error);
+                    _hudTopRetryAt[mode] = Server.CurrentTime + 30f;
+                    return;
+                }
+
+                var list = records.Values.Where(r => r.TimerTicks > 0).OrderBy(r => r.TimerTicks).ToList();
+                _hudTop[mode] = list;
+                var sorted = list.Select((r, i) => (i, r)).ToDictionary(x => x.i, x => x.r);
+                switch (mode)
+                {
+                    case "Standard": SortedCachedStandardRecords = sorted; break;
+                    case "85t": SortedCached85tRecords = sorted; break;
+                    case "102t": SortedCached102tRecords = sorted; break;
+                    case "128t": SortedCached128tRecords = sorted; break;
+                    case "Source": SortedCachedSourceRecords = sorted; break;
+                    case "Bhop": SortedCachedBhopRecords = sorted; break;
+                    case "Custom": SortedCachedCustomRecords = sorted; break;
+                }
+
+                if (_hudTopStale.Contains(mode)) HudLoadTop(mode);
+            });
+        });
+    }
+
+    /// <summary>Map start: every cached top belonged to the last map.</summary>
+    private void HudTopReset()
+    {
+        _hudTopGen++;
+        _hudTop.Clear();
+        _hudTopStale.Clear();
+        _hudTopRetryAt.Clear();
+        SortedCachedStandardRecords = [];
+        SortedCached85tRecords = [];
+        SortedCached102tRecords = [];
+        SortedCached128tRecords = [];
+        SortedCachedSourceRecords = [];
+        SortedCachedBhopRecords = [];
+        SortedCachedCustomRecords = [];
     }
 
     /// <summary>The world record from the global API cache. This fork forces the API key blank, so this is null

@@ -69,6 +69,14 @@ public sealed class HudConfig
     /// <summary>The speed bar's full scale, u/s.</summary>
     public int SpeedBarMax { get; set; } = 3500;
 
+    // ------------------------------------------------------------------ map records (the map's top times)
+    /// <summary>Rows on screen (1 to 10).</summary>
+    public int MapRecordsRows { get; set; } = 3;
+    /// <summary>Rows while !hud is open (1 to 10).</summary>
+    public int MapRecordsMenuRows { get; set; } = 10;
+    /// <summary>"On map join": how long the list stays after joining or a map start.</summary>
+    public float MapRecordsJoinSeconds { get; set; } = 10f;
+
     /// <summary>Until a player has opened !hud once: "!HUD SETTINGS" on the card in the start zone, and one chat
     /// line a little after they join.</summary>
     public bool SettingsHint { get; set; } = true;
@@ -111,6 +119,9 @@ public sealed class HudConfig
         RankDisplay = RankDisplay?.Trim().ToLowerInvariant() is "text" or "both" or "icon" ? RankDisplay.Trim().ToLowerInvariant() : "text";
         SplitBarOverflow = SplitBarOverflow?.Trim().ToLowerInvariant() is "group" or "scroll" ? SplitBarOverflow.Trim().ToLowerInvariant() : "count";
         SpeedBarMax = Math.Max(100, SpeedBarMax);
+        MapRecordsRows = Math.Clamp(MapRecordsRows, 1, HudLayout.MapRecordRows);
+        MapRecordsMenuRows = Math.Clamp(MapRecordsMenuRows, 1, HudLayout.MapRecordRows);
+        MapRecordsJoinSeconds = Math.Clamp(MapRecordsJoinSeconds, 1f, 120f);
         Defaults ??= new HudDefaults();
     }
 }
@@ -137,6 +148,9 @@ public sealed class HudDefaults
     public string ToastSize { get; set; } = "m";
     public string Feed { get; set; } = "tr";
     public string FeedSize { get; set; } = "m";
+    /// <summary>The map's top times. Top left, under the radar and money, by default: the feed has the top right.</summary>
+    public string MapRecords { get; set; } = "tl";
+    public string MapRecordsSize { get; set; } = "m";
 
     // ---- show / hide (the timer HUD, keys and splits switches stay !hud on|off, !keys and !splits)
     public bool CardOn { get; set; } = true;
@@ -147,6 +161,10 @@ public sealed class HudDefaults
     public bool Compare { get; set; } = true;
     public bool Rank { get; set; } = true;
     public bool FeedOn { get; set; } = true;
+    public bool MapRecordsOn { get; set; } = true;
+    /// <summary>When the map records show: "always", "join" (for MapRecordsJoinSeconds after joining or a map
+    /// start) or "hud" (only while !hud is open). They always show while !hud is open, with MapRecordsMenuRows.</summary>
+    public string MapRecordsShow { get; set; } = "always";
 
     // ---- style
     /// <summary>ice, orange, pink, lime or white.</summary>

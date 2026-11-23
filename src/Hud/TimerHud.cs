@@ -26,7 +26,8 @@ internal sealed record FeedLine(FeedKind Kind, string Name, string Tag, string T
 
 /// <summary>
 /// The SharpTimer HUD on Panorama (hud/panorama/layout/custom_game/sharptimer_hud.xml): the timer card, the speed,
-/// the keys, one toast slot for splits and replies, and a feed of other players' records. It replaces the center
+/// the keys, one toast slot for splits and replies, a feed of other players' records and the map's top times
+/// (map records). It replaces the center
 /// HTML that was rebuilt and sent to every player 64 times a second. Each part goes where the player put it in
 /// !hud, in the player's accent, background and text size.
 ///
@@ -105,6 +106,11 @@ internal sealed class TimerHud : IDisposable
         public long FeedSeq;
         public bool Preview;
         public bool Blank;
+        /// <summary>Map records: drawn at the static rate on their own slot, since they also show while blank.</summary>
+        public long RecordsSlot = -1;
+        /// <summary>"On map join": the window starts at the first draw after joining or a map start.</summary>
+        public bool RecordsJoin = true;
+        public float RecordsUntil;
         public float RetryAt;
         /// <summary>The panel was reset: every feed slot is written empty on the next draw.</summary>
         public bool FeedDirty = true;
@@ -164,7 +170,7 @@ internal sealed class TimerHud : IDisposable
     {
         v.W.Reset();
         v.Source = -1;
-        v.TimerSlot = v.SpeedSlot = v.SyncSlot = v.PlaceSlot = v.ProgSlot = v.StaticSlot = -1;
+        v.TimerSlot = v.SpeedSlot = v.SyncSlot = v.PlaceSlot = v.ProgSlot = v.StaticSlot = v.RecordsSlot = -1;
         v.ToastPanel = null;
         v.ToastShown = false;
         v.ToastSeq = -1;
@@ -209,7 +215,7 @@ internal sealed class TimerHud : IDisposable
                 var p = Utilities.GetPlayerFromSlot(slot);
                 if (p is not { IsValid: true } || p.SteamID != steamId || !_viewers.TryGetValue(slot, out var viewer)) return;
                 viewer.Prefs = prefs;
-                viewer.StaticSlot = -1;
+                viewer.StaticSlot = viewer.RecordsSlot = -1;
                 if (!prefs.Seen && Cfg.SettingsHint) Hint(slot, steamId);
             });
         }
@@ -242,6 +248,7 @@ internal sealed class TimerHud : IDisposable
         {
             Invalidate(v);
             v.RetryAt = 0;
+            v.RecordsJoin = true;
         }
     }
 
@@ -256,7 +263,7 @@ internal sealed class TimerHud : IDisposable
     {
         if (!_viewers.TryGetValue(player.Slot, out var v)) return;
         if (prefs != null) v.Prefs = prefs;
-        v.StaticSlot = -1;
+        v.StaticSlot = v.RecordsSlot = -1;
         if (v.Preview) SyncSample(player, v);
     }
 
@@ -281,7 +288,7 @@ internal sealed class TimerHud : IDisposable
     {
         if (!_viewers.TryGetValue(player.Slot, out var v) || v.Preview == on) return;
         v.Preview = on;
-        v.StaticSlot = -1;
+        v.StaticSlot = v.RecordsSlot = -1;
         SyncSample(player, v);
     }
 
@@ -521,6 +528,9 @@ internal sealed class TimerHud : IDisposable
             return Drive(viewer, target, timer, tick);
 
         Blank(viewer);
+        // The map records are the viewer's own, not the watched runner's: they stay while watching nobody.
+        if (_viewers.TryGetValue(viewer.Slot, out var v) && Due(ref v.RecordsSlot, tick, StaticRate))
+            DrawRecords(viewer, v, Server.CurrentTime);
         return true;
     }
 
@@ -569,6 +579,9 @@ internal sealed class TimerHud : IDisposable
 
         if (Due(ref v.StaticSlot, tick, StaticRate))
             DrawStatic(viewer, v, runner, timer, r, mine, hudOn, showCard, showSpeed, showKeys, now);
+
+        if (Due(ref v.RecordsSlot, tick, StaticRate))
+            DrawRecords(viewer, v, now);
 
         if (showCard) DrawClock(viewer, v, runner, timer, r, tick);
         if (showSpeed) DrawSpeed(viewer, v, runner, timer, tick);
@@ -715,6 +728,7 @@ internal sealed class TimerHud : IDisposable
         w.OneOf(panel, viewer, "st_tf_sz", "sz-" + prefs.ToastSize, HudLayout.SizeClasses);
         w.OneOf(panel, viewer, "st_fd", "p-" + prefs.Feed, HudLayout.PosClasses);
         w.OneOf(panel, viewer, "st_fd_sz", "sz-" + prefs.FeedSize, HudLayout.SizeClasses);
+        // st_mr's spot and size: DrawRecords.
         if (v.FeedDirty)
         {
             v.FeedDirty = false;
@@ -1034,6 +1048,85 @@ internal sealed class TimerHud : IDisposable
         v.ToastSeq = seq;
         w.Cls(panel, viewer, target, "show", true);
         v.ToastShown = true;
+    }
+
+    /// <summary>The map's top times for this viewer: the main course in their mode, normal style, from the cache
+    /// SharpTimer keeps per mode (refreshed on a map start and after a new time; never a query from here). 3 rows,
+    /// 10 while !hud is open, and the viewer's own place under the list when they are further down.</summary>
+    private void DrawRecords(CCSPlayerController viewer, Viewer v, float now)
+    {
+        var panel = _panel!;
+        var w = v.W;
+        var prefs = v.Prefs;
+
+        // Placement here too: a spectator watching nobody gets no DrawStatic.
+        w.OneOf(panel, viewer, "st_mr", "p-" + prefs.Records, HudLayout.PosClasses);
+        w.OneOf(panel, viewer, "st_mr_sz", "sz-" + prefs.RecordsSize, HudLayout.SizeClasses);
+
+        var own = _st.playerTimers.TryGetValue(viewer.Slot, out var t) ? t : null;
+        var mode = _st.HudModeOf(own);
+        // Asked even while hidden: the same cache gives the card its SR and the live place.
+        var top = _st.HudMapTop(mode);
+
+        if (v.RecordsJoin)
+        {
+            v.RecordsJoin = false;
+            v.RecordsUntil = now + Cfg.MapRecordsJoinSeconds;
+        }
+
+        var show = prefs.RecordsOn && (v.Preview || prefs.RecordsShow switch
+        {
+            "j" => now < v.RecordsUntil,
+            "h" => false,
+            _ => true,
+        });
+        w.Cls(panel, viewer, "mr", "show", show);
+        if (!show) return;
+
+        var list = top ?? (IReadOnlyList<PlayerRecord>)Array.Empty<PlayerRecord>();
+        var rows = Math.Min(v.Preview ? Cfg.MapRecordsMenuRows : Cfg.MapRecordsRows, list.Count);
+        var steamId = viewer.SteamID.ToString();
+        var mine = -1;
+        for (var i = 0; i < list.Count; i++)
+            if (list[i].SteamID == steamId) { mine = i; break; }
+
+        w.Var(panel, viewer, "mr_sub", mode != _st.HudDefaultModeName ? mode : "");
+        w.Cls(panel, viewer, "mr", "empty", list.Count == 0);
+        if (list.Count == 0) w.Var(panel, viewer, "mr_empty", top == null ? "Loading the times" : "No times yet. Be the first");
+
+        for (var j = 0; j < HudLayout.MapRecordRows; j++)
+        {
+            var id = "mr" + j;
+            w.Cls(panel, viewer, id, "hidden", j >= rows);
+            if (j >= rows) continue;
+            var rec = list[j];
+            w.Var(panel, viewer, id + "_p", (j + 1).ToString());
+            w.Var(panel, viewer, id + "_n", rec.PlayerName ?? "");
+            w.Var(panel, viewer, id + "_t", HudLayout.Time(rec.TimerTicks));
+            w.Cls(panel, viewer, id, "top", j == 0);
+            w.Cls(panel, viewer, id, "me", j == mine);
+        }
+
+        // The viewer's own row: further down the cached list, or past it with their PB and SharpTimer's placement.
+        string place = "", time = "";
+        if (mine >= rows)
+        {
+            place = (mine + 1).ToString();
+            time = HudLayout.Time(list[mine].TimerTicks);
+        }
+        else if (mine < 0 && top != null && own is { CachedPBTicks: > 0 })
+        {
+            var (p, _) = ParseRanking(own.CachedMapPlacement ?? "");
+            place = p > 0 ? p.ToString() : "";
+            time = HudLayout.Time(own.CachedPBTicks);
+        }
+
+        var meOn = time.Length > 0;
+        w.Cls(panel, viewer, "mr_me", "hidden", !meOn);
+        if (!meOn) return;
+        w.Var(panel, viewer, "mr_me_p", place);
+        w.Var(panel, viewer, "mr_me_n", viewer.PlayerName);
+        w.Var(panel, viewer, "mr_me_t", time);
     }
 
     private void Chip(CCSPlayerController viewer, Viewer v, string panelId, string prefix, string variable, string text, int sign)

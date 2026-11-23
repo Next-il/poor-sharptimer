@@ -612,6 +612,97 @@
 .fd-row.k-stg .fd-ico { background-image: url("s2r://panorama/images/icons/ui/trophy.vsvg"); wash-color: #c49bff; }
 .fd-row.k-stg .fd-tag { color: #c49bff; background-color: #c49bff22; }
 
+/* ================================================================== map records: the map's top times
+
+   The current map's main course, the viewer's mode, normal style. 3 rows on screen by default and 10 while
+   !hud is open; the viewer's own row is drawn into the list (me) or, when they are further down, under it
+   (mr_me). Rows the list does not fill are hidden. Shown always, for a few seconds after joining or a map
+   start, or only while !hud is open: the server toggles "show". */
+
+.mr {
+    width: 236px;
+    flow-children: down;
+    padding: 6px 8px 6px 8px;
+    background-color: #0b0f14c4;
+    overflow: noclip;
+    opacity: 0;
+    blur: gaussian(6.0);
+    transform: translate3d(0px, -8px, 0px);
+    transition-property: opacity, transform, blur;
+    transition-duration: 0.2s, 0.24s, 0.2s;
+    transition-timing-function: ease-out, cubic-bezier( 0.2, 0.8, 0.25, 1.0 ), ease-out;
+}
+.mr.show { opacity: 1; blur: gaussian(0.0); transform: translate3d(0px, 0px, 0px); }
+.mr-head { flow-children: right; width: 100%; height: 18px; }
+.mr-ico {
+    width: 12px;
+    height: 12px;
+    vertical-align: center;
+    background-size: 100% 100%;
+    background-texture-size: 32px 32px;
+    background-repeat: no-repeat;
+    background-image: url("s2r://panorama/images/icons/ui/trophy.vsvg");
+    wash-color: #c49bff;
+}
+.mr-k {
+    vertical-align: center;
+    margin-left: 6px;
+    font-family: Stratum2 Mono;
+    font-weight: bold;
+    font-size: 9px;
+    letter-spacing: 1.4px;
+    color: #8b939c;
+}
+.mr-sub {
+    vertical-align: center;
+    font-family: Stratum2 Mono;
+    font-weight: bold;
+    font-size: 8.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #62c4ff;
+}
+.mr-row { flow-children: right; width: 100%; height: 19px; margin-top: 2px; padding-right: 4px; }
+.mr-p {
+    width: 22px;
+    vertical-align: center;
+    text-align: right;
+    font-family: Stratum2 Mono;
+    font-weight: bold;
+    font-size: 10px;
+    color: #8b939c;
+}
+.mr-n {
+    width: fill-parent-flow(1.0);
+    vertical-align: center;
+    margin-left: 8px;
+    font-family: Stratum2 Medium Condensed;
+    font-weight: bold;
+    font-size: 14px;
+    color: #e8ebee;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.mr-t {
+    vertical-align: center;
+    margin-left: 8px;
+    font-family: Stratum2 Mono;
+    font-weight: bold;
+    font-size: 11.5px;
+    color: #d7dce1;
+}
+.mr-row.top .mr-p, .mr-row.top .mr-t { color: #c49bff; }
+.mr-row.me { background-color: #ffffff10; }
+.mr-me { margin-top: 5px; background-color: #ffffff10; }
+.mr-empty {
+    margin: 3px 0px 1px 30px;
+    font-family: Stratum2 Regular;
+    font-size: 12px;
+    color: #8b939c;
+    visibility: collapse;
+}
+.mr.empty .mr-empty { visibility: visible; }
+
 /* ===== GENERATED below by hud/tools/gen_layouts.py - edit the script, not this block ===== */
 
 /* positions: one class per spot, on the part's outer panel */
@@ -968,30 +1059,35 @@
 .st-skin.ac-ice .chip.c-style { color: #62c4ff; background-color: #62c4ff1f; }
 .st-skin.ac-ice .ts-k, .st-skin.ac-ice .ts-mb { color: #62c4ff; }
 .st-skin.ac-ice .sc-chip, .st-skin.ac-ice .sc-cap, .st-skin.ac-ice .tc-pfill { background-color: #62c4ff; }
+.st-skin.ac-ice .mr-row.me .mr-n, .st-skin.ac-ice .mr-row.me .mr-p, .st-skin.ac-ice .mr-me .mr-n, .st-skin.ac-ice .mr-me .mr-p, .st-skin.ac-ice .mr-sub { color: #62c4ff; }
 .st-skin.ac-orange .tc.st-run, .st-skin.ac-orange .tc.st-replay { border-top: 2px solid #f7783c; }
 .st-skin.ac-orange .tc.st-run .tc-ico, .st-skin.ac-orange .tc.st-replay .tc-ico { wash-color: #f7783c; }
 .st-skin.ac-orange .tc.st-run .tc-lead, .st-skin.ac-orange .tc.st-replay .tc-lead { color: #f7783c; }
 .st-skin.ac-orange .chip.c-style { color: #f7783c; background-color: #f7783c1f; }
 .st-skin.ac-orange .ts-k, .st-skin.ac-orange .ts-mb { color: #f7783c; }
 .st-skin.ac-orange .sc-chip, .st-skin.ac-orange .sc-cap, .st-skin.ac-orange .tc-pfill { background-color: #f7783c; }
+.st-skin.ac-orange .mr-row.me .mr-n, .st-skin.ac-orange .mr-row.me .mr-p, .st-skin.ac-orange .mr-me .mr-n, .st-skin.ac-orange .mr-me .mr-p, .st-skin.ac-orange .mr-sub { color: #f7783c; }
 .st-skin.ac-pink .tc.st-run, .st-skin.ac-pink .tc.st-replay { border-top: 2px solid #ff6fae; }
 .st-skin.ac-pink .tc.st-run .tc-ico, .st-skin.ac-pink .tc.st-replay .tc-ico { wash-color: #ff6fae; }
 .st-skin.ac-pink .tc.st-run .tc-lead, .st-skin.ac-pink .tc.st-replay .tc-lead { color: #ff6fae; }
 .st-skin.ac-pink .chip.c-style { color: #ff6fae; background-color: #ff6fae1f; }
 .st-skin.ac-pink .ts-k, .st-skin.ac-pink .ts-mb { color: #ff6fae; }
 .st-skin.ac-pink .sc-chip, .st-skin.ac-pink .sc-cap, .st-skin.ac-pink .tc-pfill { background-color: #ff6fae; }
+.st-skin.ac-pink .mr-row.me .mr-n, .st-skin.ac-pink .mr-row.me .mr-p, .st-skin.ac-pink .mr-me .mr-n, .st-skin.ac-pink .mr-me .mr-p, .st-skin.ac-pink .mr-sub { color: #ff6fae; }
 .st-skin.ac-lime .tc.st-run, .st-skin.ac-lime .tc.st-replay { border-top: 2px solid #a2e05a; }
 .st-skin.ac-lime .tc.st-run .tc-ico, .st-skin.ac-lime .tc.st-replay .tc-ico { wash-color: #a2e05a; }
 .st-skin.ac-lime .tc.st-run .tc-lead, .st-skin.ac-lime .tc.st-replay .tc-lead { color: #a2e05a; }
 .st-skin.ac-lime .chip.c-style { color: #a2e05a; background-color: #a2e05a1f; }
 .st-skin.ac-lime .ts-k, .st-skin.ac-lime .ts-mb { color: #a2e05a; }
 .st-skin.ac-lime .sc-chip, .st-skin.ac-lime .sc-cap, .st-skin.ac-lime .tc-pfill { background-color: #a2e05a; }
+.st-skin.ac-lime .mr-row.me .mr-n, .st-skin.ac-lime .mr-row.me .mr-p, .st-skin.ac-lime .mr-me .mr-n, .st-skin.ac-lime .mr-me .mr-p, .st-skin.ac-lime .mr-sub { color: #a2e05a; }
 .st-skin.ac-white .tc.st-run, .st-skin.ac-white .tc.st-replay { border-top: 2px solid #e8ebee; }
 .st-skin.ac-white .tc.st-run .tc-ico, .st-skin.ac-white .tc.st-replay .tc-ico { wash-color: #e8ebee; }
 .st-skin.ac-white .tc.st-run .tc-lead, .st-skin.ac-white .tc.st-replay .tc-lead { color: #e8ebee; }
 .st-skin.ac-white .chip.c-style { color: #e8ebee; background-color: #e8ebee1f; }
 .st-skin.ac-white .ts-k, .st-skin.ac-white .ts-mb { color: #e8ebee; }
 .st-skin.ac-white .sc-chip, .st-skin.ac-white .sc-cap, .st-skin.ac-white .tc-pfill { background-color: #e8ebee; }
+.st-skin.ac-white .mr-row.me .mr-n, .st-skin.ac-white .mr-row.me .mr-p, .st-skin.ac-white .mr-me .mr-n, .st-skin.ac-white .mr-me .mr-p, .st-skin.ac-white .mr-sub { color: #e8ebee; }
 /* errors and the capped start keep their colour whatever the accent */
 .st-skin .ts.err .ts-k, .st-skin .ts.err .ts-mb { color: #f26450; }
 .st-skin .sc.flash.capped .sc-chip { background-color: #f2c14e; color: #1a1405; }
@@ -1002,16 +1098,19 @@
 .st-skin.op-lo .k { background-color: #0b0f1470; }
 .st-skin.op-lo .ts { background-color: #0b0f1499; }
 .st-skin.op-lo .fd-row { background-color: #0b0f148c; }
+.st-skin.op-lo .mr { background-color: #0b0f148c; }
 .st-skin.op-md .tc { background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171ec6), to(#0b0f14d0)); }
 .st-skin.op-md .sc-box { background-color: #0b0f149e; }
 .st-skin.op-md .k { background-color: #0b0f14a6; }
 .st-skin.op-md .ts { background-color: #0b0f14cc; }
 .st-skin.op-md .fd-row { background-color: #0b0f14c4; }
+.st-skin.op-md .mr { background-color: #0b0f14c4; }
 .st-skin.op-hi .tc { background-color: gradient(linear, 0% 0%, 0% 100%, from(#12171eee), to(#0b0f14f2)); }
 .st-skin.op-hi .sc-box { background-color: #0b0f14e0; }
 .st-skin.op-hi .k { background-color: #0b0f14e0; }
 .st-skin.op-hi .ts { background-color: #0b0f14f0; }
 .st-skin.op-hi .fd-row { background-color: #0b0f14ee; }
+.st-skin.op-hi .mr { background-color: #0b0f14ee; }
 /* pressed and blocked keys and the error toast keep their fill */
 .st-skin .k.no { background-color: #0b0f1459; }
 .st-skin .k.on { background-color: #f2f4f6; }
@@ -1080,6 +1179,12 @@
 .st-skin.tx-s .fd-tag { font-size: 7.5px; }
 .st-skin.tx-s .fd-t { font-size: 11.4px; }
 .st-skin.tx-s .fd-d { font-size: 9.2px; }
+.st-skin.tx-s .mr-k { font-size: 7.9px; }
+.st-skin.tx-s .mr-sub { font-size: 7.5px; }
+.st-skin.tx-s .mr-p { font-size: 8.8px; }
+.st-skin.tx-s .mr-n { font-size: 12.3px; }
+.st-skin.tx-s .mr-t { font-size: 10.1px; }
+.st-skin.tx-s .mr-empty { font-size: 10.6px; }
 .st-skin.tx-s .sc-num { width: 66.9px; }
 .st-skin.tx-l .tc-time { font-size: 46px; }
 .st-skin.cc.tx-l .tc-time { font-size: 36.8px; }
@@ -1131,6 +1236,12 @@
 .st-skin.tx-l .fd-tag { font-size: 9.8px; }
 .st-skin.tx-l .fd-t { font-size: 14.9px; }
 .st-skin.tx-l .fd-d { font-size: 12.1px; }
+.st-skin.tx-l .mr-k { font-size: 10.3px; }
+.st-skin.tx-l .mr-sub { font-size: 9.8px; }
+.st-skin.tx-l .mr-p { font-size: 11.5px; }
+.st-skin.tx-l .mr-n { font-size: 16.1px; }
+.st-skin.tx-l .mr-t { font-size: 13.2px; }
+.st-skin.tx-l .mr-empty { font-size: 13.8px; }
 .st-skin.tx-l .sc-num { width: 87.4px; }
 /* the compact card at text size M */
 .st-skin.cc.tx-m .tc-time { font-size: 32px; }

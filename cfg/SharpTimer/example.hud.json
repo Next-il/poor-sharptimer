@@ -39,6 +39,13 @@
   // The speed bar's full scale in u/s (50 steps).
   "SpeedBarMax": 3500,
 
+  // Map records: the map's top times (main course, the player's mode, normal style), from SharpTimer's record
+  // cache, which loads on a map start and again after a new PB. Rows on screen, rows while !hud is open (1-10),
+  // and how long "on map join" keeps them up after joining or a map start.
+  "MapRecordsRows": 3,
+  "MapRecordsMenuRows": 10,
+  "MapRecordsJoinSeconds": 10,
+
   // Until a player has opened !hud once: "!HUD SETTINGS" on the card in the start zone and one chat line after joining.
   "SettingsHint": true,
 
@@ -46,7 +53,7 @@
   // Spots: tl tc tr (top left/center/right), ml mr (middle left/right), xa xu (above/under the crosshair),
   // bc br (bottom center/right), rw (right side, above the weapon list). Sizes: s m l.
   // Cluster is the speed readout (it was speed + keys); it also takes "nx" (next to the card). Toast also takes
-  // "card" (with it). Two parts on one spot: the keys move.
+  // "card" (with it). Two parts on one spot: the keys move, then the map records.
   "Defaults": {
     "Card": "bc",
     "CardSize": "m",
@@ -59,6 +66,8 @@
     "ToastSize": "m",
     "Feed": "tr",
     "FeedSize": "m",
+    "MapRecords": "tl",            // under the radar and money; the feed has the top right
+    "MapRecordsSize": "m",
 
     // Show / hide. The timer HUD, keys and split toast switches are !hud on|off, !keys and !splits, per player.
     "CardOn": true,
@@ -68,6 +77,8 @@
     "Compare": true,               // PB and SR on the card
     "Rank": true,
     "FeedOn": true,
+    "MapRecordsOn": true,
+    "MapRecordsShow": "always",    // "always", "join" (a few seconds after joining or a map start) or "hud" (only in !hud)
 
     // Style.
     "Accent": "ice",               // ice, orange, pink, lime, white

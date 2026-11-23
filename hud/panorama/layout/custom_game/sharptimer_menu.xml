@@ -14,22 +14,23 @@
 
 		BUTTONS (PanelAction.Button, by id)
 		  mg_0..mg_4                 tabs: layout, show / hide, style, chat, reset
-		  lp_card lp_sp lp_ks lp_ts lp_fd   the part the layout tab moves
+		  lp_card lp_sp lp_ks lp_ts lp_fd lp_mr   the part the layout tab moves
 		  mz_{tl|tc|tr|ml|xa|xu|mr|bc|br|rw}   put it there (the spots on the mini map)
 		  mz_with                    next to the card (speed) / with the card (splits)
 		  ms_s ms_m ms_l             size        mo_kl_grid mo_kl_row   keys layout
 		  vo_<k>_on vo_<k>_off       show / hide, k = hud card cmp rank toast speed bar sync keys feed
+		  vo_mr_off vo_mr_a vo_mr_j vo_mr_h   map records: off, always, on map join, only in !hud
 		  ss_ac_<accent> ss_cc_full|compact ss_op_lo|md|hi ss_tx_s|m|l ss_td_1|2|3
 		  ch_spl_off|hud|chat ch_keys_on|off ch_ss_on|off ch_fin_on|off
 		  rs_layout rs_all
 
 		CLASSES THE SERVER TOGGLES
 		  mg_N mp_N active    sm_bar at-0..at-4    mz_* cur    mz_with on hidden    lp_* on off
-		  ms_* mo_* vo_* ss_* ch_* on    ms_opts disabled    lo_kl hidden    vr_<k> disabled
-		  mb_card mb_sp mb_ks mb_ts mb_fd   p-* | nx-* nxc-* (mb_sp) | wc-* wcc-* (mb_ts)   sz-s|m|l   sel off   cc (mb_card)
+		  ms_* mo_* vo_* ss_* ch_* on    ms_opts disabled    lo_kl hidden    vr_<k> vr_mr disabled
+		  mb_card mb_sp mb_ks mb_ts mb_fd mb_mr   p-* | nx-* nxc-* (mb_sp) | wc-* wcc-* (mb_ts)   sz-s|m|l   sel off   cc (mb_card)
 
 		DIALOG VARIABLES
-		  sm_tag sm_where sm_with lp_card_w lp_sp_w lp_ks_w lp_ts_w lp_fd_w rs_msg
+		  sm_tag sm_where sm_with lp_card_w lp_sp_w lp_ks_w lp_ts_w lp_fd_w lp_mr_w rs_msg
 	-->
 	<Panel class="hud-screen" hittest="false">
 		<Panel id="StMenuRoot" class="hud-root hud-card sm-root">
@@ -77,6 +78,9 @@
 							<Panel class="mm-cs mm-ammo" hittest="false" />
 							<Panel class="mm-cs mm-weap" hittest="false" />
 							<Panel class="mm-cs mm-x" hittest="false" />
+							<Panel id="mb_mr" class="mm-blk mm-mr sz-m p-tl" hittest="false">
+								<Label class="mm-blk-l" text="MAP TOP" hittest="false" />
+							</Panel>
 							<Panel id="mb_fd" class="mm-blk mm-fd sz-m p-tr" hittest="false">
 								<Label class="mm-blk-l" text="RECORDS" hittest="false" />
 							</Panel>
@@ -152,6 +156,10 @@
 							<Label class="lp-n" text="RECORDS FEED" hittest="false" />
 							<Label class="lp-w" text="{s:lp_fd_w}" hittest="false" />
 						</Button>
+						<Button id="lp_mr" class="lp">
+							<Label class="lp-n" text="MAP RECORDS" hittest="false" />
+							<Label class="lp-w" text="{s:lp_mr_w}" hittest="false" />
+						</Button>
 						<Panel class="se-row lo-row" hittest="false">
 							<Label class="se-k" text="SIZE" hittest="false" />
 							<Panel id="ms_opts" class="se-opts" hittest="false">
@@ -179,149 +187,171 @@
 						</Panel>
 					</Panel>
 				</Panel>
-				<Panel id="mp_1" class="sm-page pg-cols" hittest="false">
-					<Panel class="vh-col vh-col0" hittest="false">
-						<Panel id="vr_hud" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="TIMER HUD" hittest="false" />
-								<Label class="se-d" text="Card and speed. Same as !hud on / off." hittest="false" />
+				<Panel id="mp_1" class="sm-page pg-reset" hittest="false">
+					<Panel class="vh-cols" hittest="false">
+						<Panel class="vh-col vh-col0" hittest="false">
+							<Panel id="vr_hud" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="TIMER HUD" hittest="false" />
+									<Label class="se-d" text="Card and speed. Same as !hud on / off." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_hud_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_hud_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_hud_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_hud_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
+							<Panel id="vr_card" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="TIMER CARD" hittest="false" />
+									<Label class="se-d" text="Time, stage, place and the split bar." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_card_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_card_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
+							</Panel>
+							<Panel id="vr_cmp" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="PB AND SR" hittest="false" />
+									<Label class="se-d" text="Your best and the server record." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_cmp_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_cmp_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
+							</Panel>
+							<Panel id="vr_rank" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="RANK" hittest="false" />
+									<Label class="se-d" text="Your rank name on the card." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_rank_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_rank_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
+							</Panel>
+							<Panel id="vr_toast" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="SPLIT TOAST" hittest="false" />
+									<Label class="se-d" text="Stage and checkpoint times. Same as !splits." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_toast_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_toast_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
 						</Panel>
-						<Panel id="vr_card" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="TIMER CARD" hittest="false" />
-								<Label class="se-d" text="Time, stage, place and the split bar." hittest="false" />
+						<Panel class="vh-col vh-col1" hittest="false">
+							<Panel id="vr_speed" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="SPEED" hittest="false" />
+									<Label class="se-d" text="Your speed in u/s." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_speed_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_speed_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_card_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_card_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
+							<Panel id="vr_bar" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="SPEED BAR" hittest="false" />
+									<Label class="se-d" text="The bar under the number." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_bar_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_bar_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
-						</Panel>
-						<Panel id="vr_cmp" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="PB AND SR" hittest="false" />
-								<Label class="se-d" text="Your best and the server record." hittest="false" />
+							<Panel id="vr_sync" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="SYNC" hittest="false" />
+									<Label class="se-d" text="Strafe sync, next to pre." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_sync_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_sync_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_cmp_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_cmp_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
+							<Panel id="vr_keys" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="KEYS" hittest="false" />
+									<Label class="se-d" text="The keys you press. Same as !keys." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_keys_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_keys_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
-						</Panel>
-						<Panel id="vr_rank" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="RANK" hittest="false" />
-								<Label class="se-d" text="Your rank name on the card." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_rank_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_rank_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
-						</Panel>
-						<Panel id="vr_toast" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="SPLIT TOAST" hittest="false" />
-								<Label class="se-d" text="Stage and checkpoint times. Same as !splits." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_toast_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_toast_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
+							<Panel id="vr_feed" class="vh-row" hittest="false">
+								<Panel class="vh-txt" hittest="false">
+									<Label class="se-k" text="RECORDS FEED" hittest="false" />
+									<Label class="se-d" text="Other players' finishes, PBs and records." hittest="false" />
+								</Panel>
+								<Panel class="se-opts vh-opts" hittest="false">
+									<Button id="vo_feed_on" class="se-opt">
+										<Label class="se-opt-lbl" text="ON" hittest="false" />
+									</Button>
+									<Button id="vo_feed_off" class="se-opt">
+										<Label class="se-opt-lbl" text="OFF" hittest="false" />
+									</Button>
+								</Panel>
 							</Panel>
 						</Panel>
 					</Panel>
-					<Panel class="vh-col vh-col1" hittest="false">
-						<Panel id="vr_speed" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="SPEED" hittest="false" />
-								<Label class="se-d" text="Your speed in u/s." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_speed_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_speed_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
+					<Panel id="vr_mr" class="vh-row vh-wide" hittest="false">
+						<Panel class="vh-txt" hittest="false">
+							<Label class="se-k" text="MAP RECORDS" hittest="false" />
+							<Label class="se-d" text="The map's top 3, and your place. The top 10 while this menu is open." hittest="false" />
 						</Panel>
-						<Panel id="vr_bar" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="SPEED BAR" hittest="false" />
-								<Label class="se-d" text="The bar under the number." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_bar_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_bar_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
-						</Panel>
-						<Panel id="vr_sync" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="SYNC" hittest="false" />
-								<Label class="se-d" text="Strafe sync, next to pre." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_sync_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_sync_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
-						</Panel>
-						<Panel id="vr_keys" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="KEYS" hittest="false" />
-								<Label class="se-d" text="The keys you press. Same as !keys." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_keys_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_keys_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
-						</Panel>
-						<Panel id="vr_feed" class="vh-row" hittest="false">
-							<Panel class="vh-txt" hittest="false">
-								<Label class="se-k" text="RECORDS FEED" hittest="false" />
-								<Label class="se-d" text="Other players' finishes, PBs and records." hittest="false" />
-							</Panel>
-							<Panel class="se-opts vh-opts" hittest="false">
-								<Button id="vo_feed_on" class="se-opt">
-									<Label class="se-opt-lbl" text="ON" hittest="false" />
-								</Button>
-								<Button id="vo_feed_off" class="se-opt">
-									<Label class="se-opt-lbl" text="OFF" hittest="false" />
-								</Button>
-							</Panel>
+						<Panel class="se-opts vh-opts" hittest="false">
+							<Button id="vo_mr_off" class="se-opt">
+								<Label class="se-opt-lbl" text="OFF" hittest="false" />
+							</Button>
+							<Button id="vo_mr_a" class="se-opt">
+								<Label class="se-opt-lbl" text="ALWAYS" hittest="false" />
+							</Button>
+							<Button id="vo_mr_j" class="se-opt">
+								<Label class="se-opt-lbl" text="ON MAP JOIN" hittest="false" />
+							</Button>
+							<Button id="vo_mr_h" class="se-opt">
+								<Label class="se-opt-lbl" text="ONLY IN !HUD" hittest="false" />
+							</Button>
 						</Panel>
 					</Panel>
 				</Panel>

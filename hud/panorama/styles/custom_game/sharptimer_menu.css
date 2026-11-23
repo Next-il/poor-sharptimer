@@ -159,8 +159,8 @@
 .lp {
     flow-children: right;
     width: 100%;
-    height: 30px;
-    margin-bottom: 3px;
+    height: 27px;
+    margin-bottom: 2px;
     padding: 0px 10px 0px 12px;
     background-color: #ffffff0a;
     transition-property: background-color;
@@ -189,7 +189,9 @@
 .lp.on .lp-n { color: #62c4ff; }
 .lp.on .lp-w { color: #9fd8ff; }
 .lp.off .lp-n { color: #5c646d; }
-.lo-row { margin-top: 10px; margin-bottom: 0px; }
+/* .se-row.lo-row: the option rows below set margin-bottom later in the file; these two must win so six parts,
+   SIZE and KEYS LAYOUT fit the 320px page */
+.se-row.lo-row { margin-top: 8px; margin-bottom: 0px; }
 
 /* ------------------------------------------------------------------ option rows (the /rank settings rows) */
 
@@ -227,15 +229,16 @@
 .se-opt.on { background-color: #62c4ff29; border-bottom: 2px solid #62c4ff; }
 .se-opt.on .se-opt-lbl { color: #62c4ff; }
 
-/* ------------------------------------------------------------------ show / hide: two columns of rows */
+/* ------------------------------------------------------------------ show / hide: two columns of rows, then map records across both */
 
+.vh-cols { flow-children: right; width: 100%; }
 .vh-col { flow-children: down; width: fill-parent-flow(1.0); }
 .vh-col1 { margin-left: 16px; }
 .vh-row {
     flow-children: right;
     width: 100%;
-    height: 54px;
-    margin-bottom: 6px;
+    height: 46px;
+    margin-bottom: 5px;
     padding: 0px 10px 0px 12px;
     background-color: #ffffff06;
     transition-property: opacity;
@@ -247,6 +250,7 @@
 .vh-opts { vertical-align: center; margin-top: 0px; margin-left: 8px; }
 .vh-opts .se-opt { height: 26px; padding: 0px 11px 0px 11px; }
 .vh-opts .se-opt:last-child { margin-right: 0px; }
+.vh-wide { margin-bottom: 0px; }
 
 /* ------------------------------------------------------------------ style and chat: two columns */
 
@@ -327,6 +331,9 @@
 .mm-fd.sz-s { width: 79.3px; height: 33.7px; }
 .mm-fd.sz-m { width: 93.3px; height: 39.7px; }
 .mm-fd.sz-l { width: 107.3px; height: 45.6px; }
+.mm-mr.sz-s { width: 46.8px; height: 23.2px; }
+.mm-mr.sz-m { width: 55.1px; height: 27.3px; }
+.mm-mr.sz-l { width: 63.3px; height: 31.4px; }
 .mm-card.cc.sz-s { width: 59.5px; height: 18.2px; }
 .mm-card.cc.sz-m { width: 70px; height: 21.5px; }
 .mm-card.cc.sz-l { width: 80.5px; height: 24.7px; }
