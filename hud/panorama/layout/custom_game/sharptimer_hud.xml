@@ -138,7 +138,7 @@
 									<Label class="tc-map" text="{s:tc_map}" hittest="false" />
 									<Label class="chip c-style" text="{s:c_style}" hittest="false" />
 									<Label class="chip c-mode" text="{s:c_mode}" hittest="false" />
-									<Label class="chip c-hint" text="!HUD SETTINGS" hittest="false" />
+									<Label class="chip c-hint" text="!SETTINGS" hittest="false" />
 								</Panel>
 								<Panel class="tc-main" hittest="false">
 									<Label id="tc_time" class="tc-time" text="{s:tc_time}" hittest="false" />

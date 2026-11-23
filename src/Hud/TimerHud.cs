@@ -906,7 +906,7 @@ internal sealed class TimerHud : IDisposable
 
         // PB, SR and rank all off: the row goes, with its margin.
         w.Cls(panel, viewer, "tc", "nocmp", !pbOn && !srOn && !useIcon && !useText);
-        // "!HUD SETTINGS" in the start zone until the player has opened the settings once.
+        // "!SETTINGS" in the start zone until the player has opened the settings once.
         w.Cls(panel, viewer, "tc", "hint", Cfg.SettingsHint && !prefs.Seen && !spectating);
 
         // ------------------------------------------------------------ the split bar

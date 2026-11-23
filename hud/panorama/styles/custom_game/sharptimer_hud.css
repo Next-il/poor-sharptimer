@@ -299,7 +299,7 @@
 .chip.c-mode { color: #d7dce1; background-color: #ffffff12; }
 .tc.nostyle .c-style { visibility: collapse; }
 .tc.nomode .c-mode { visibility: collapse; }
-/* "!HUD SETTINGS" in the start zone, until the player has opened the settings once */
+/* "!SETTINGS" in the start zone, until the player has opened the settings once */
 .chip.c-hint { color: #d7dce1; background-color: #ffffff12; visibility: collapse; }
 .tc.hint.st-start .c-hint { visibility: visible; }
 

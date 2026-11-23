@@ -77,7 +77,7 @@ public sealed class HudConfig
     /// <summary>"On map join": how long the list stays after joining or a map start.</summary>
     public float MapRecordsJoinSeconds { get; set; } = 10f;
 
-    /// <summary>Until a player has opened !hud once: "!HUD SETTINGS" on the card in the start zone, and one chat
+    /// <summary>Until a player has opened !settings once: "!SETTINGS" on the card in the start zone, and one chat
     /// line a little after they join.</summary>
     public bool SettingsHint { get; set; } = true;
 

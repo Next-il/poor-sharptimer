@@ -196,7 +196,7 @@ def hud_xml():
             L("{s:tc_map}", "tc-map"),
             L("{s:c_style}", "chip c-style"),
             L("{s:c_mode}", "chip c-mode"),
-            L("!HUD SETTINGS", "chip c-hint"),
+            L("!SETTINGS", "chip c-hint"),
         ])),
         P(cls="tc-main", children="".join([
             L("{s:tc_time}", "tc-time", "tc_time"),
