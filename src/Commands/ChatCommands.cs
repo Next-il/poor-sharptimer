@@ -409,7 +409,8 @@ namespace SharpTimer
             }
         }
 
-        [ConsoleCommand("css_help", "alias for !sthelp")]
+        // No css_help alias: !help is the network's help menu (Next-il Help plugin), and two plugins on one command
+        // both answer it. SharpTimer's own list stays on !sthelp.
         [ConsoleCommand("css_sthelp", "Prints all commands for the player")]
         [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
         public void HelpCommand(CCSPlayerController? player, CommandInfo command)
